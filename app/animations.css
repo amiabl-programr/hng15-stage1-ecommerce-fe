@@ -1,0 +1,270 @@
+/* ------------------------------------------------------------------ *
+ * Motion
+ *
+ * Reconstructed from notes.md §4, which names these effects and their
+ * delay range but does not define their curves — see plan.md §5. Values
+ * here are the engineering-consistent reading of that description, not
+ * a port of the original stylesheet.
+ *
+ * Two rules govern everything below:
+ *   1. Motion is decorative. Nothing communicates state that is not also
+ *      in the DOM.
+ *   2. Reduced-motion neutralises all of it, and that block is the last
+ *      thing in this file so it wins on cascade order.
+ * ------------------------------------------------------------------ */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Entrances
+ * ------------------------------------------------------------------ */
+
+.hero-animate > * {
+  animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* Staggered 0.05s → 0.42s. Anything past the eighth child holds at the
+ * ceiling rather than pushing the last section off screen. */
+.hero-animate > *:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.hero-animate > *:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.hero-animate > *:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.hero-animate > *:nth-child(4) {
+  animation-delay: 0.2s;
+}
+.hero-animate > *:nth-child(5) {
+  animation-delay: 0.25s;
+}
+.hero-animate > *:nth-child(6) {
+  animation-delay: 0.3s;
+}
+.hero-animate > *:nth-child(7) {
+  animation-delay: 0.35s;
+}
+.hero-animate > *:nth-child(8) {
+  animation-delay: 0.4s;
+}
+.hero-animate > *:nth-child(n + 9) {
+  animation-delay: 0.42s;
+}
+
+.fade-up {
+  animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.fade-in {
+  animation: fade-in 0.4s ease-out backwards;
+}
+
+.slide-right {
+  animation: slide-right 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* ------------------------------------------------------------------ *
+ * Scroll reveal
+ *
+ * notes.md §10 is explicit and this is the part that bites: content
+ * must be visible when JavaScript has not run. A crawler, a reader with
+ * a blocked script, or anyone whose observer never fires must still see
+ * the section.
+ *
+ * So the hidden state is opt-in from a class that an inline script in
+ * <head> adds before first paint. Without that class — no JS, or JS that
+ * failed — every .reveal element renders visible. The reverse of this
+ * default ships blank sections, which is the failure the brief warns about.
+ * ------------------------------------------------------------------ */
+
+.reveal {
+  opacity: 1;
+}
+
+.js-reveal .reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.js-reveal .reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Staggered variant for grids of siblings. */
+.js-reveal .reveal-stagger > * {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.js-reveal .reveal-stagger.is-visible > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.js-reveal .reveal-stagger.is-visible > *:nth-child(1) {
+  transition-delay: 0.05s;
+}
+.js-reveal .reveal-stagger.is-visible > *:nth-child(2) {
+  transition-delay: 0.1s;
+}
+.js-reveal .reveal-stagger.is-visible > *:nth-child(3) {
+  transition-delay: 0.15s;
+}
+.js-reveal .reveal-stagger.is-visible > *:nth-child(4) {
+  transition-delay: 0.2s;
+}
+.js-reveal .reveal-stagger.is-visible > *:nth-child(5) {
+  transition-delay: 0.25s;
+}
+.js-reveal .reveal-stagger.is-visible > *:nth-child(n + 6) {
+  transition-delay: 0.3s;
+}
+
+/* ------------------------------------------------------------------ *
+ * Interaction
+ * ------------------------------------------------------------------ */
+
+.product-card-shadow {
+  transition:
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
+}
+
+.product-card-shadow:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -8px rgb(15 23 42 / 0.15);
+}
+
+/* Reveals the card's secondary action on hover and on keyboard focus,
+ * so the control is reachable without a pointer. */
+.card-action {
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.group:hover .card-action,
+.group:focus-within .card-action {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cart-badge-pop {
+  animation: pop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-press {
+  transition:
+    transform 0.1s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.btn-press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.promo-shimmer {
+  background-image: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgb(255 255 255 / 0.35) 50%,
+    transparent 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.5s linear infinite;
+}
+
+/* ------------------------------------------------------------------ *
+ * Reduced motion — last, so it wins the cascade.
+ *
+ * This block is the difference between a storefront that respects its
+ * users and one that does not. Do not trim it, and do not add an
+ * animation above it without re-checking that this still covers it.
+ * ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Force the reveal end-state rather than trusting a 0.01ms transition
+   * to land. Content is visible, not merely almost visible. */
+  .js-reveal .reveal,
+  .js-reveal .reveal-stagger > * {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .card-action {
+    opacity: 1;
+    transform: none;
+  }
+}
