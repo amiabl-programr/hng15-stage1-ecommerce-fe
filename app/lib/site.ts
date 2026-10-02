@@ -42,7 +42,6 @@ export const companyNav: NavItem[] = [
 export const accountNav: NavItem[] = [
   { label: "Sign in", to: "/login" },
   { label: "My orders", to: "/account/orders" },
-  { label: "Admin portal", to: "/admin" },
 ];
 
 /**
