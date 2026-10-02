@@ -11,26 +11,28 @@ import type { Route } from "./+types/root";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [
-  { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
-  },
-  {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
-  },
+  { rel: "icon", href: "/favicon.ico" },
 ];
 
+/**
+ * Runs before first paint, so `.reveal` elements can start hidden without
+ * the content ever being invisible to anything that does not run scripts.
+ * See the scroll-reveal block in animations.css for why the hidden state
+ * has to be opt-in rather than the default.
+ */
+const REVEAL_BOOT = "document.documentElement.classList.add('js-reveal')";
+
 export function Layout({ children }: { children: React.ReactNode }) {
+  // suppressHydrationWarning below: the script above adds a class to <html>
+  // before React hydrates. That is intentional, not a mismatch to fix.
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        <script dangerouslySetInnerHTML={{ __html: REVEAL_BOOT }} />
       </head>
       <body>
         {children}
@@ -46,9 +48,8 @@ export default function App() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!";
+  let message = "Something went wrong";
   let details = "An unexpected error occurred.";
-  let stack: string | undefined;
 
   if (isRouteErrorResponse(error)) {
     message = error.status === 404 ? "404" : "Error";
@@ -58,18 +59,20 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
         : error.statusText || details;
   } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message;
-    stack = error.stack;
   }
 
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
-      {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
-          <code>{stack}</code>
-        </pre>
-      )}
+    <main className="bg-page text-fg flex min-h-screen items-center justify-center p-6">
+      <div className="max-w-form text-center">
+        <p className="eyebrow mb-3">{message}</p>
+        <h1 className="text-3xl sm:text-4xl">{details}</h1>
+        <a
+          href="/"
+          className="text-accent mt-8 inline-block font-bold hover:underline"
+        >
+          Back to the storefront
+        </a>
+      </div>
     </main>
   );
 }

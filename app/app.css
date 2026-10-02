@@ -1,15 +1,135 @@
 @import "tailwindcss";
+@import "./animations.css";
 
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+/* ------------------------------------------------------------------ *
+ * Typefaces — self-hosted. No CDN request, no third-party connection.
+ * Variable fonts, so one file per family covers every weight.
+ * ------------------------------------------------------------------ */
+
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/Geist-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
 }
 
-html,
-body {
-  @apply bg-white dark:bg-gray-950;
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/fonts/GeistMono-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
+@theme {
+  --font-sans:
+    "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:
+    "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Content widths. Catalogue and admin tables get the room they need;
+     editorial and single forms get less, because long measure is unreadable. */
+  --container-shell: 80rem; /* max-w-7xl — catalogue, admin tables */
+  --container-editorial: 64rem; /* max-w-5xl — fabrication, about */
+  --container-form: 56rem; /* max-w-4xl — single forms */
+
+  /* Control heights, so a button and an input never disagree by a pixel. */
+  --spacing-control: 0.625rem; /* py-2.5 */
+  --spacing-cta: 0.75rem; /* py-3 */
+
+  /* ---- Semantic shell palette. ----
+   * Every colour below resolves through a --shell-* variable that the
+   * .shell-* utilities below set. That is what keeps the storefront and
+   * the console from drifting: a component says bg-page, not bg-white,
+   * so it cannot be painted into the wrong shell by accident.
+   * The var() fallbacks mean an unstyled subtree still reads sanely
+   * rather than collapsing to transparent. */
+  --color-page: var(--shell-page, var(--color-white));
+  --color-raised: var(--shell-raised, var(--color-slate-50));
+  --color-fg: var(--shell-fg, var(--color-slate-900));
+  --color-muted: var(--shell-muted, var(--color-slate-500));
+  --color-line: var(--shell-line, var(--color-slate-200));
+  --color-accent: var(--shell-accent, var(--color-blue-600));
+  --color-on-accent: var(--shell-on-accent, var(--color-white));
+}
+
+/* ------------------------------------------------------------------ *
+ * Shells
+ *
+ * Storefront is light; account and admin are dark. That split is
+ * deliberate — the console should read as an operations surface. It is
+ * per-route, not per-OS, so nothing here keys off prefers-color-scheme.
+ * ------------------------------------------------------------------ */
+
+@utility shell-store {
+  --shell-page: var(--color-white);
+  --shell-raised: var(--color-slate-50);
+  --shell-fg: var(--color-slate-900);
+  --shell-muted: var(--color-slate-500);
+  --shell-line: var(--color-slate-200);
+  --shell-accent: var(--color-blue-600);
+  --shell-on-accent: var(--color-white);
+}
+
+@utility shell-console {
+  --shell-page: var(--color-slate-950);
+  --shell-raised: var(--color-slate-900);
+  --shell-fg: var(--color-slate-100);
+  --shell-muted: var(--color-slate-400);
+  --shell-line: var(--color-slate-800);
+  --shell-accent: var(--color-amber-500);
+  --shell-on-accent: var(--color-slate-950);
+}
+
+/* ------------------------------------------------------------------ *
+ * Base
+ * ------------------------------------------------------------------ */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-page text-fg font-sans antialiased;
+  }
+
+  /* Focus is always visible. Never removed, only replaced. */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-black tracking-tight text-balance;
+  }
+
+  /* Money, SKUs, order numbers and quantities inside dense tables.
+   * Tabular figures so columns of numbers align. */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* The eyebrow label above a section heading. One definition, used
+   * everywhere, so the tracking never gets eyeballed into inconsistency. */
+  .eyebrow {
+    @apply text-xs font-bold tracking-widest text-muted uppercase;
+  }
+
+  .shell-container {
+    @apply mx-auto w-full max-w-shell px-4 sm:px-6 lg:px-8;
+  }
+
+  .shell-editorial {
+    @apply mx-auto w-full max-w-editorial px-4 sm:px-6 lg:px-8;
+  }
+
+  .shell-form {
+    @apply mx-auto w-full max-w-form px-4 sm:px-6;
   }
 }
