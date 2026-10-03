@@ -17,8 +17,8 @@ export const SEED_CATEGORIES: Category[] = [
     media: [
       {
         id: 'med-cat-ind',
-        url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80',
-        alt: 'Industrial longspan roofing installation',
+        url: 'https://images.unsplash.com/photo-1602193289141-9605ad75d0a5?auto=format&fit=crop&w=800&q=80',
+        alt: 'Industrial corrugated longspan roofing sheets',
         role: 'main',
         width: 800,
         height: 600,
@@ -36,8 +36,8 @@ export const SEED_CATEGORIES: Category[] = [
     media: [
       {
         id: 'med-cat-res',
-        url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
-        alt: 'Residential house with steeltile roof',
+        url: 'https://images.unsplash.com/photo-1610056868457-e61d6f9eeb86?auto=format&fit=crop&w=800&q=80',
+        alt: 'Residential architectural stepped metal roofing tiles',
         role: 'main',
         width: 800,
         height: 600,
@@ -55,8 +55,8 @@ export const SEED_CATEGORIES: Category[] = [
     media: [
       {
         id: 'med-cat-stone',
-        url: 'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=800&q=80',
-        alt: 'Stone-coated architectural roof tiles',
+        url: 'https://images.unsplash.com/photo-1647546656105-c6a9cfa6f0fd?auto=format&fit=crop&w=800&q=80',
+        alt: 'Stone-coated architectural roof shingles and tiles',
         role: 'main',
         width: 800,
         height: 600,
@@ -74,8 +74,8 @@ export const SEED_CATEGORIES: Category[] = [
     media: [
       {
         id: 'med-cat-flash',
-        url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80',
-        alt: 'Roof ridge flashing and metal trims',
+        url: 'https://images.unsplash.com/photo-1617459973560-33aea09d1c22?auto=format&fit=crop&w=800&q=80',
+        alt: 'Roof ridge flashing, gutters and metal trims',
         role: 'main',
         width: 800,
         height: 600,
@@ -93,8 +93,8 @@ export const SEED_CATEGORIES: Category[] = [
     media: [
       {
         id: 'med-cat-fast',
-        url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80',
-        alt: 'Roofing fasteners and screws',
+        url: 'https://images.unsplash.com/photo-1647427060142-c18ea9536019?auto=format&fit=crop&w=800&q=80',
+        alt: 'Roofing fasteners, hex-head self-drilling screws and washers',
         role: 'main',
         width: 800,
         height: 600,
@@ -122,7 +122,7 @@ export const SEED_PRODUCTS: Product[] = [
     media: [
       {
         id: 'med-longspan-1',
-        url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80',
+        url: 'https://images.unsplash.com/photo-1602193289141-9605ad75d0a5?auto=format&fit=crop&w=800&q=80',
         alt: 'Aluminium longspan sheet profile',
         role: 'main',
         width: 800,
@@ -132,7 +132,7 @@ export const SEED_PRODUCTS: Product[] = [
       },
       {
         id: 'med-longspan-2',
-        url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80',
+        url: 'https://images.unsplash.com/photo-1518736346281-76873166a64a?auto=format&fit=crop&w=800&q=80',
         alt: 'Longspan roofing sheet bundle',
         role: 'profile',
         width: 800,
@@ -184,7 +184,7 @@ export const SEED_PRODUCTS: Product[] = [
     media: [
       {
         id: 'med-metcoppo-1',
-        url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
+        url: 'https://images.unsplash.com/photo-1587061633437-187ac80e8e7a?auto=format&fit=crop&w=800&q=80',
         alt: 'Metcoppo profile roofing sheet',
         role: 'main',
         width: 800,
@@ -228,7 +228,7 @@ export const SEED_PRODUCTS: Product[] = [
     media: [
       {
         id: 'med-steptile-1',
-        url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80',
+        url: 'https://images.unsplash.com/photo-1610056868457-e61d6f9eeb86?auto=format&fit=crop&w=800&q=80',
         alt: 'Modern step-tile profile sheet',
         role: 'main',
         width: 800,
@@ -272,7 +272,7 @@ export const SEED_PRODUCTS: Product[] = [
     media: [
       {
         id: 'med-shingle-1',
-        url: 'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=800&q=80',
+        url: 'https://images.unsplash.com/photo-1647546656105-c6a9cfa6f0fd?auto=format&fit=crop&w=800&q=80',
         alt: 'Stone-coated shingle roofing tile',
         role: 'main',
         width: 800,
@@ -316,7 +316,7 @@ export const SEED_PRODUCTS: Product[] = [
     media: [
       {
         id: 'med-ridge-1',
-        url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80',
+        url: 'https://images.unsplash.com/photo-1635958854453-214b7af60fb5?auto=format&fit=crop&w=800&q=80',
         alt: 'Circular ridge cap flashing',
         role: 'main',
         width: 800,
@@ -352,7 +352,7 @@ export const SEED_PRODUCTS: Product[] = [
     media: [
       {
         id: 'med-gutter-1',
-        url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80',
+        url: 'https://images.unsplash.com/photo-1617459973560-33aea09d1c22?auto=format&fit=crop&w=800&q=80',
         alt: 'Industrial box gutter section',
         role: 'main',
         width: 800,
@@ -388,7 +388,7 @@ export const SEED_PRODUCTS: Product[] = [
     media: [
       {
         id: 'med-screw-1',
-        url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80',
+        url: 'https://images.unsplash.com/photo-1647427060142-c18ea9536019?auto=format&fit=crop&w=800&q=80',
         alt: 'Self-drilling roofing screws pack',
         role: 'main',
         width: 800,
