@@ -4,13 +4,14 @@ import { useFocusTrap } from "~/hooks/useFocusTrap";
 import { useLockBodyScroll } from "~/hooks/useLockBodyScroll";
 import { cn } from "~/lib/cn";
 
-/** Side panel for mobile navigation and overlays below `md`. Same overlay contract as Modal. */
+/** Side panel for mobile/tablet navigation and overlays. Same overlay contract as Modal. */
 export function Drawer({
   open,
   onClose,
   title = "Navigation menu",
   side = "right",
   hideDefaultHeader = false,
+  containerClassName,
   className,
   children,
 }: {
@@ -19,6 +20,7 @@ export function Drawer({
   title?: string;
   side?: "right" | "left";
   hideDefaultHeader?: boolean;
+  containerClassName?: string;
   className?: string;
   children: ReactNode;
 }) {
@@ -28,7 +30,7 @@ export function Drawer({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 md:hidden">
+    <div className={cn("fixed inset-0 z-50", containerClassName)}>
       {/* Backdrop */}
       <div
         className="fade-in absolute inset-0 bg-slate-950/65 backdrop-blur-xs transition-opacity"
