@@ -61,6 +61,10 @@ export function useToast() {
   return context;
 }
 
+export function useOptionalToast() {
+  return useContext(ToastContext);
+}
+
 const TONE_STYLES: Record<ToastTone, string> = {
   info: "border-line",
   success: "border-emerald-500/40",

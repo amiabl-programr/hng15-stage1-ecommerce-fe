@@ -11,6 +11,8 @@ import {
   Ruler,
   ShieldCheck,
   ShoppingBag,
+  ShoppingCart,
+  ArrowRight,
   Truck,
 } from "lucide-react";
 import { getProductBySlug } from "~/lib/api/endpoints";
@@ -20,6 +22,7 @@ import { useCart } from "~/store/cart";
 import { Badge } from "~/components/ui/Badge";
 import { Button } from "~/components/ui/Button";
 import { ProfileDiagram } from "~/components/products/ProfileDiagram";
+import { useOptionalToast } from "~/components/ui/Toast";
 import type { MediaAsset, Product, ProductVariant } from "~/types/api";
 
 export function meta({ params }: Route.MetaArgs) {
@@ -52,6 +55,7 @@ export async function loader({ params }: Route.LoaderArgs) {
 export default function ProductDetailPage() {
   const { product } = useLoaderData<typeof loader>();
   const { addItem } = useCart();
+  const toast = useOptionalToast();
 
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     product.variants && product.variants.length > 0 ? product.variants[0] : null
@@ -61,7 +65,7 @@ export default function ProductDetailPage() {
       ? product.media.find((m) => m.isPrimary) || product.media[0]
       : "diagram"
   );
-  const [quantity, setQuantity] = useState<number>(product.minOrderQuantity || 1);
+  const [quantity, setQuantity] = useState<number>(1);
   const [lengthMetres, setLengthMetres] = useState<number>(3.0);
   const [colour, setColour] = useState<string>("Traffic Black (RAL 9017)");
   const [finish, setFinish] = useState<string>("Matte Texture");
@@ -95,7 +99,8 @@ export default function ProductDetailPage() {
     });
 
     setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+    toast?.notify(`Added ${quantity}x ${product.name} to order cart`, "success");
+    setTimeout(() => setAdded(false), 2500);
   };
 
   return (
@@ -330,9 +335,9 @@ export default function ProductDetailPage() {
               <div className="flex items-center rounded-lg border border-line bg-page">
                 <button
                   type="button"
-                  onClick={() => setQuantity((q) => Math.max(product.minOrderQuantity || 1, q - 1))}
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   className="btn-press p-2 text-muted hover:text-fg"
-                  disabled={quantity <= (product.minOrderQuantity || 1)}
+                  disabled={quantity <= 1}
                   aria-label="Decrease quantity"
                 >
                   <Minus className="size-4" />
@@ -358,25 +363,34 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Action Button */}
-          <Button
-            type="button"
-            variant={added ? "secondary" : "primary"}
-            size="lg"
-            onClick={handleAddToCart}
-            className="w-full py-3.5 flex items-center justify-center gap-2 text-base font-bold"
-          >
-            {added ? (
-              <>
-                <Check className="size-5 text-emerald-600" />
-                Added to Cart!
-              </>
-            ) : (
-              <>
-                <ShoppingBag className="size-5" />
-                Add to Order Cart
-              </>
-            )}
-          </Button>
+          {added ? (
+            <div className="space-y-2.5 animate-in fade-in">
+              <div className="w-full py-3 px-4 rounded-xl bg-emerald-600/10 border border-emerald-600/30 text-emerald-600 flex items-center justify-center gap-2 font-bold text-sm">
+                <Check className="size-5" />
+                <span>Added to cart successfully!</span>
+              </div>
+              <Link
+                to="/cart"
+                className="btn-press w-full py-3.5 px-4 rounded-xl bg-accent text-on-accent flex items-center justify-center gap-2 font-bold text-base shadow-md shadow-accent/20 cursor-pointer"
+              >
+                <span>View Cart &amp; Proceed to Checkout</span>
+                <ArrowRight className="size-4" />
+              </Link>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="primary"
+              size="lg"
+              onClick={handleAddToCart}
+              className="w-full py-3.5 flex items-center justify-center gap-2 text-base font-bold shadow-md shadow-accent/15 cursor-pointer"
+            >
+              <ShoppingCart className="size-5" />
+              <span>
+                Add {quantity} {isDimensioned ? `(${lengthMetres}m)` : ""} to Cart &bull; {formatMoney(lineTotal)}
+              </span>
+            </Button>
+          )}
 
           {/* Technical Specs Summary */}
           <div className="mt-8 border-t border-line pt-6">
