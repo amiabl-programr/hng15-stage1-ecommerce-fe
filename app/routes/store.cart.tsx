@@ -66,7 +66,7 @@ export default function CartPage() {
         {/* Cart Items List */}
         <div className="lg:col-span-8 space-y-4">
           {items.map((item) => (
-            <Card key={item.id} className="p-4 sm:p-6 bg-page border border-line rounded-2xl">
+            <Card key={item.id} className="p-4 sm:p-6 bg-page border border-line rounded-2xl max-w-full overflow-hidden">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 {/* Left: Thumbnail & Details */}
                 <div className="flex items-start gap-4 flex-1 min-w-0">
@@ -186,7 +186,7 @@ export default function CartPage() {
 
         {/* Order Summary Card */}
         <div className="lg:col-span-4">
-          <Card className="p-6 bg-raised border border-line rounded-2xl sticky top-24">
+          <Card className="p-6 bg-raised border border-line rounded-2xl sm:sticky sm:top-0">
             <h2 className="text-lg font-black tracking-tight text-fg mb-4">
               Order Summary
             </h2>

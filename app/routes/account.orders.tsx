@@ -9,7 +9,7 @@ import { Card } from "~/components/ui/Card";
 import { Badge } from "~/components/ui/Badge";
 import { Button, buttonClasses } from "~/components/ui/Button";
 import { EmptyState } from "~/components/ui/EmptyState";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/Table";
+import { DataTable, type Column } from "~/components/ui/Table";
 import type { Order } from "~/types/api";
 
 export function meta() {
@@ -93,52 +93,58 @@ export default function AccountOrdersPage() {
       ) : (
         <div className="space-y-4">
           <Card className="bg-raised border border-line rounded-2xl overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order Number</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Payment</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.map((ord) => (
-                  <TableRow key={ord.id}>
-                    <TableCell className="font-mono font-bold text-fg">
-                      {ord.orderNumber}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted">
-                      {formatDateTime(ord.createdAt)}
-                    </TableCell>
-                    <TableCell className="text-xs text-fg">
-                      {ord.items.length} {ord.items.length === 1 ? "item" : "items"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge tone="accent">{ord.status.toUpperCase()}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge tone="neutral">{ord.paymentStatus.toUpperCase()}</Badge>
-                    </TableCell>
-                    <TableCell className="font-bold text-fg">
-                      {formatMoney(ord.total)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Link
-                        to={`/account/orders/${ord.id}`}
-                        className="btn-press text-xs font-bold text-accent hover:underline inline-flex items-center gap-1"
-                      >
-                        View Order
-                        <ArrowRight className="size-3" />
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <DataTable
+              columns={[
+                {
+                  key: "orderNumber",
+                  header: "Order Number",
+                  cell: (ord) => <span className="font-mono font-bold text-fg">{ord.orderNumber}</span>,
+                  mono: true,
+                },
+                {
+                  key: "date",
+                  header: "Date",
+                  cell: (ord) => <span className="text-xs text-muted">{formatDateTime(ord.createdAt)}</span>,
+                },
+                {
+                  key: "items",
+                  header: "Items",
+                  cell: (ord) => <span className="text-xs text-fg">{ord.items.length} {ord.items.length === 1 ? "item" : "items"}</span>,
+                },
+                {
+                  key: "status",
+                  header: "Status",
+                  cell: (ord) => <Badge tone="accent">{ord.status.toUpperCase()}</Badge>,
+                },
+                {
+                  key: "payment",
+                  header: "Payment",
+                  cell: (ord) => <Badge tone="neutral">{ord.paymentStatus.toUpperCase()}</Badge>,
+                },
+                {
+                  key: "total",
+                  header: "Total",
+                  cell: (ord) => <span className="font-bold text-fg">{formatMoney(ord.total)}</span>,
+                  mono: true,
+                },
+                {
+                  key: "action",
+                  header: "Action",
+                  cell: (ord) => (
+                    <Link
+                      to={`/account/orders/${ord.id}`}
+                      className="btn-press text-xs font-bold text-accent hover:underline inline-flex items-center gap-1"
+                    >
+                      View Order
+                      <ArrowRight aria-hidden className="size-3" />
+                    </Link>
+                  ),
+                },
+              ]}
+              rows={orders}
+              getRowId={(ord) => ord.id.toString()}
+              caption="Order History"
+            />
           </Card>
 
           {nextCursor && (
