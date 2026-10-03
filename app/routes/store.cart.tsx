@@ -1,6 +1,7 @@
 import { Link } from "react-router";
-import { ArrowRight, Minus, Plus, ShoppingBag, Trash2, ArrowLeft } from "lucide-react";
+import { ArrowRight, Minus, Plus, ShoppingBag, Trash2, ArrowLeft, Lock } from "lucide-react";
 import { useCart } from "~/store/cart";
+import { useAuth } from "~/store/session";
 import { formatMoney } from "~/lib/format";
 import { site } from "~/lib/site";
 import { EmptyState } from "~/components/ui/EmptyState";
@@ -14,6 +15,7 @@ export function meta() {
 export default function CartPage() {
   const { items, itemCount, subtotal, isHydrated, updateQuantity, removeItem, clearCart } =
     useCart();
+  const { isAuthenticated, isInitialized } = useAuth();
 
   if (!isHydrated) {
     return (
@@ -202,19 +204,41 @@ export default function CartPage() {
 
             <div className="py-4 flex justify-between items-baseline">
               <div>
-                <span className="text-base font-black text-fg block">Indicative Total</span>
-                <span className="text-[11px] text-muted">Final rates verified on checkout</span>
+                <span className="text-base font-black text-fg block">Total Value</span>
+                <span className="text-[11px] text-muted">Excludes final delivery offloading</span>
               </div>
-              <span className="text-2xl font-black text-fg">{formatMoney(subtotal)}</span>
+              <span className="text-2xl font-black text-fg tracking-tight">{formatMoney(subtotal)}</span>
             </div>
 
-            <Link
-              to="/checkout"
-              className={buttonClasses({ size: "lg", className: "w-full py-3.5 flex items-center justify-center gap-2 font-bold" })}
-            >
-              Proceed to Checkout
-              <ArrowRight className="size-4" />
-            </Link>
+            {isInitialized && !isAuthenticated ? (
+              <div className="space-y-2">
+                <Link
+                  to="/login?redirect=/checkout"
+                  className={buttonClasses({
+                    size: "lg",
+                    className: "w-full py-3.5 flex items-center justify-center gap-2 font-bold shadow-md shadow-accent/15",
+                  })}
+                >
+                  <Lock className="size-4" />
+                  <span>Sign In to Checkout</span>
+                  <ArrowRight className="size-4" />
+                </Link>
+                <p className="text-center text-[11px] text-muted leading-tight">
+                  Sign in required to verify delivery address and place orders
+                </p>
+              </div>
+            ) : (
+              <Link
+                to="/checkout"
+                className={buttonClasses({
+                  size: "lg",
+                  className: "w-full py-3.5 flex items-center justify-center gap-2 font-bold shadow-md shadow-accent/15",
+                })}
+              >
+                <span>Proceed to Checkout</span>
+                <ArrowRight className="size-4" />
+              </Link>
+            )}
           </Card>
         </div>
       </div>

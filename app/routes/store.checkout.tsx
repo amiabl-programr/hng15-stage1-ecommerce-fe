@@ -4,10 +4,13 @@ import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
+  ChevronDown,
   CreditCard,
   HardHat,
+  Info,
   Lock,
   Package,
+  PhoneCall,
   ShieldCheck,
   Truck,
   Wallet,
@@ -21,16 +24,18 @@ import { ApiError } from "~/lib/api/client";
 import { Button } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
 import { Field } from "~/components/ui/Field";
+import { cn } from "~/lib/cn";
 import type { PaymentMethod } from "~/types/api";
 
 export function meta() {
-  return [{ title: `Checkout — ${site.name}` }];
+  return [{ title: `Secure Checkout — ${site.name}` }];
 }
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, subtotal, isHydrated, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading, isInitialized, fetchSession } = useAuth();
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   const [formData, setFormData] = useState({
     fullName: user?.fullName || "",
@@ -46,6 +51,14 @@ export default function CheckoutPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
+
+  useEffect(() => {
+    // Check auth status from backend on mount
+    fetchSession().finally(() => {
+      setCheckingAuth(false);
+    });
+  }, [fetchSession]);
 
   useEffect(() => {
     if (user) {
@@ -57,24 +70,56 @@ export default function CheckoutPage() {
     }
   }, [user]);
 
-  if (!isHydrated) {
+  useEffect(() => {
+    // Guard: user must be authenticated to checkout
+    if (!checkingAuth && isInitialized && !isAuthenticated && !isLoading) {
+      navigate("/login?redirect=/checkout", { replace: true });
+    }
+  }, [checkingAuth, isInitialized, isAuthenticated, isLoading, navigate]);
+
+  if (checkingAuth || isLoading || !isInitialized || !isHydrated) {
     return (
-      <div className="shell-container py-16 text-center">
-        <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-sm text-muted">Preparing checkout...</p>
+      <div className="shell-container py-24 text-center">
+        <div className="size-10 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-sm font-bold text-fg">Verifying account authentication...</p>
+        <p className="text-xs text-muted mt-1">Checking session status with backend server</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="shell-container py-20 text-center max-w-md mx-auto">
+        <div className="size-16 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center mx-auto mb-4">
+          <Lock className="size-8 text-accent" />
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-black mb-3">Sign in required to checkout</h1>
+        <p className="text-sm text-muted mb-6 leading-relaxed">
+          You must be logged in to place a verified roofing order. Sign in to link your order to your account and track site deliveries.
+        </p>
+        <Link to="/login?redirect=/checkout">
+          <Button variant="primary" size="lg" className="w-full font-bold">
+            Sign In with Google
+          </Button>
+        </Link>
       </div>
     );
   }
 
   if (items.length === 0) {
     return (
-      <div className="shell-container py-16 text-center">
-        <h1 className="text-2xl font-black mb-4">Your cart is empty</h1>
-        <p className="text-sm text-muted mb-6">
-          Add items to your cart before proceeding to checkout.
+      <div className="shell-container py-20 text-center max-w-lg mx-auto">
+        <div className="size-16 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center mx-auto mb-4">
+          <Package className="size-8 text-accent" />
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-black mb-3">Your cart is empty</h1>
+        <p className="text-sm text-muted mb-8 leading-relaxed">
+          Please add roofing sheets, profiles, or accessories from our catalogue before completing your order.
         </p>
         <Link to="/products">
-          <Button variant="primary">Browse Products</Button>
+          <Button variant="primary" size="lg" className="w-full sm:w-auto font-bold px-8">
+            Browse Products Catalogue
+          </Button>
         </Link>
       </div>
     );
@@ -101,21 +146,36 @@ export default function CheckoutPage() {
 
     // Client validation
     const errors: Record<string, string> = {};
-    if (!formData.fullName.trim()) errors.fullName = "Full name is required";
+    if (!formData.fullName.trim()) errors.fullName = "Full name is required for delivery manifests";
     if (!formData.email.trim() || !formData.email.includes("@")) {
-      errors.email = "A valid email address is required";
+      errors.email = "A valid email address is required for invoices";
     }
     if (!formData.phone.trim() || formData.phone.length < 5) {
-      errors.phone = "Phone number is required (min. 5 digits)";
+      errors.phone = "Phone number is required for site delivery coordination";
     }
     if (!formData.streetAddress.trim()) {
-      errors.streetAddress = "Delivery street address is required";
+      errors.streetAddress = "Site delivery destination address is required";
     }
-    if (!formData.city.trim()) errors.city = "City is required";
+    if (!formData.city.trim()) errors.city = "City / Town is required";
     if (!formData.state.trim()) errors.state = "State is required";
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
+      setGeneralError("Please complete the required details highlighted below.");
+
+      // Scroll smoothly to first invalid input so mobile users see it immediately
+      const firstFieldId = Object.keys(errors)[0];
+      const targetElement = document.getElementById(firstFieldId);
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: "smooth", block: "center" });
+        targetElement.focus();
+      }
+      return;
+    }
+
+    if (!isAuthenticated || !user) {
+      setGeneralError("Authentication required: Please sign in to submit your order.");
+      navigate("/login?redirect=/checkout");
       return;
     }
 
@@ -169,60 +229,161 @@ export default function CheckoutPage() {
       } else {
         setGeneralError("An unexpected error occurred. Please check your network and retry.");
       }
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="shell-container py-10 md:py-16">
-      <div className="mb-8">
+    <div className="shell-container py-8 sm:py-12 md:py-16">
+      {/* Top Breadcrumb & Heading */}
+      <div className="mb-6 sm:mb-8">
         <Link
           to="/cart"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-muted hover:text-fg mb-3"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-muted hover:text-fg mb-3 transition-colors"
         >
           <ArrowLeft className="size-3.5" />
-          Back to cart
+          <span>Back to cart ({items.length} items)</span>
         </Link>
-        <h1 className="text-3xl font-black tracking-tight text-fg">Secure Checkout</h1>
-        <p className="text-sm text-muted mt-1">
-          Provide your delivery details and choose your preferred payment method.
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-fg">
+              Direct Mill Order Checkout
+            </h1>
+            <p className="text-xs sm:text-sm text-muted mt-1">
+              Verify delivery address and select payment terms. Your order is backed by manufacturer warranty.
+            </p>
+          </div>
+          <div className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full shrink-0">
+            <ShieldCheck className="size-4" />
+            <span>256-Bit SSL Encrypted</span>
+          </div>
+        </div>
       </div>
 
+      {/* Mobile Collapsible Order Summary Accordion (< lg screens) */}
+      <div className="lg:hidden mb-6 rounded-2xl border border-line bg-raised overflow-hidden shadow-xs">
+        <button
+          type="button"
+          onClick={() => setMobileSummaryOpen(!mobileSummaryOpen)}
+          className="w-full flex items-center justify-between p-4 text-left active:bg-line/40 transition-colors cursor-pointer"
+          aria-expanded={mobileSummaryOpen}
+        >
+          <div className="flex items-center gap-2.5 text-sm font-bold text-fg">
+            <Package className="size-4 text-accent" />
+            <span>{mobileSummaryOpen ? "Hide order items" : "Show order items"}</span>
+            <span className="text-xs text-muted font-normal">
+              ({items.length} {items.length === 1 ? "item" : "items"})
+            </span>
+            <ChevronDown
+              className={cn(
+                "size-4 text-muted transition-transform duration-200",
+                mobileSummaryOpen && "rotate-180"
+              )}
+            />
+          </div>
+          <span className="text-base font-black text-fg tracking-tight">
+            {formatMoney(subtotal)}
+          </span>
+        </button>
+
+        {mobileSummaryOpen && (
+          <div className="border-t border-line p-4 space-y-3 bg-page animate-in fade-in duration-200">
+            {items.map((item) => (
+              <div key={item.id} className="flex items-center justify-between gap-3 text-xs py-1 border-b border-line/50 last:border-0">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  {item.imageUrl ? (
+                    <img
+                      src={item.imageUrl}
+                      alt={item.productName}
+                      className="size-10 rounded-lg object-cover border border-line shrink-0"
+                    />
+                  ) : (
+                    <div className="size-10 rounded-lg bg-raised border border-line flex items-center justify-center shrink-0">
+                      <Package className="size-4 text-muted" />
+                    </div>
+                  )}
+                  <div className="truncate flex-1">
+                    <p className="font-bold text-fg truncate">{item.productName}</p>
+                    <p className="text-[11px] text-muted">
+                      {item.quantity} × {formatMoney(item.unitPrice)}
+                      {item.customSpecs?.lengthMetres && ` (${item.customSpecs.lengthMetres}m)`}
+                    </p>
+                  </div>
+                </div>
+                <span className="font-black text-fg shrink-0">{formatMoney(item.lineTotal)}</span>
+              </div>
+            ))}
+
+            <div className="pt-2 text-xs space-y-1.5 border-t border-line">
+              <div className="flex justify-between text-muted">
+                <span>Material Subtotal</span>
+                <span className="font-bold text-fg">{formatMoney(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span>Site Offload Logistics</span>
+                <span className="font-bold text-emerald-600">Verified upon dispatch</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Global Validation Alert */}
       {generalError && (
-        <div className="mb-8 p-4 rounded-xl bg-danger/10 border border-danger/30 text-danger flex items-start gap-3 text-sm">
-          <AlertCircle className="size-5 shrink-0 mt-0.5" />
+        <div className="mb-6 p-4 rounded-2xl bg-danger/10 border border-danger/30 text-danger flex items-start gap-3 text-sm animate-in fade-in">
+          <AlertCircle className="size-5 shrink-0 mt-0.5 text-danger" />
           <div>
-            <p className="font-bold">Unable to process order</p>
-            <p>{generalError}</p>
+            <p className="font-bold">Please check your form details</p>
+            <p className="text-xs mt-0.5">{generalError}</p>
           </div>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="grid gap-10 lg:grid-cols-12">
-        {/* Left Form: Customer & Delivery Details */}
+      {/* Main Checkout Grid */}
+      <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-12 items-start">
+        {/* Left Form: Contact, Destination & Payment */}
         <div className="lg:col-span-7 space-y-6">
-          {/* Customer Info Card */}
-          <Card className="p-6 bg-page border border-line rounded-2xl">
-            <h2 className="text-lg font-black text-fg mb-4 flex items-center gap-2">
-              <span className="size-6 rounded-full bg-accent text-on-accent text-xs flex items-center justify-center font-black">
+          {/* Step 1: Customer Contact */}
+          <Card className="p-5 sm:p-7 bg-page border border-line rounded-2xl shadow-xs">
+            <div className="flex items-center gap-3 mb-5 pb-3 border-b border-line/60">
+              <span className="size-7 rounded-full bg-accent text-on-accent text-xs flex items-center justify-center font-black shrink-0">
                 1
               </span>
-              Contact Information
-            </h2>
+              <div>
+                <h2 className="text-base sm:text-lg font-black text-fg">Contact Information</h2>
+                <p className="text-[11px] sm:text-xs text-muted">Order waybill, invoicing and driver notifications</p>
+              </div>
+            </div>
+
+            {user && (
+              <div className="mb-4 flex items-center justify-between rounded-xl bg-accent/10 border border-accent/20 px-3.5 py-2.5 text-xs">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-accent" />
+                  <span className="font-bold text-fg">
+                    Signed in as {user.fullName || user.email}
+                  </span>
+                </div>
+                <span className="text-[11px] font-bold text-accent">Verified Session</span>
+              </div>
+            )}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <Field id="fullName" label="Full Name" error={fieldErrors.fullName} required>
+                <Field id="fullName" label="Full Name (or Company Representative)" error={fieldErrors.fullName} required>
                   {(props) => (
                     <input
                       {...props}
                       name="fullName"
+                      autoComplete="name"
                       value={formData.fullName}
                       onChange={handleChange}
-                      placeholder="e.g. Victor Okafor"
-                      className="w-full rounded-lg border border-line bg-raised py-2.5 px-3.5 text-sm font-medium focus:border-accent"
+                      placeholder="e.g. Victor Okafor / Apex Build Ltd"
+                      className={cn(
+                        "w-full rounded-xl border bg-raised py-3 px-3.5 text-sm font-medium focus:border-accent focus:bg-page transition-colors",
+                        fieldErrors.fullName ? "border-danger ring-1 ring-danger" : "border-line"
+                      )}
                     />
                   )}
                 </Field>
@@ -235,10 +396,15 @@ export default function CheckoutPage() {
                       {...props}
                       name="email"
                       type="email"
+                      inputMode="email"
+                      autoComplete="email"
                       value={formData.email}
                       onChange={handleChange}
-                      placeholder="victor@example.com"
-                      className="w-full rounded-lg border border-line bg-raised py-2.5 px-3.5 text-sm font-medium focus:border-accent"
+                      placeholder="name@company.com"
+                      className={cn(
+                        "w-full rounded-xl border bg-raised py-3 px-3.5 text-sm font-medium focus:border-accent focus:bg-page transition-colors",
+                        fieldErrors.email ? "border-danger ring-1 ring-danger" : "border-line"
+                      )}
                     />
                   )}
                 </Field>
@@ -251,10 +417,15 @@ export default function CheckoutPage() {
                       {...props}
                       name="phone"
                       type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
                       value={formData.phone}
                       onChange={handleChange}
-                      placeholder="+234 800 123 4567"
-                      className="w-full rounded-lg border border-line bg-raised py-2.5 px-3.5 text-sm font-medium focus:border-accent"
+                      placeholder="0803 123 4567 or +234..."
+                      className={cn(
+                        "w-full rounded-xl border bg-raised py-3 px-3.5 text-sm font-medium focus:border-accent focus:bg-page transition-colors",
+                        fieldErrors.phone ? "border-danger ring-1 ring-danger" : "border-line"
+                      )}
                     />
                   )}
                 </Field>
@@ -262,26 +433,33 @@ export default function CheckoutPage() {
             </div>
           </Card>
 
-          {/* Delivery Address Card */}
-          <Card className="p-6 bg-page border border-line rounded-2xl">
-            <h2 className="text-lg font-black text-fg mb-4 flex items-center gap-2">
-              <span className="size-6 rounded-full bg-accent text-on-accent text-xs flex items-center justify-center font-black">
+          {/* Step 2: Site Delivery Destination */}
+          <Card className="p-5 sm:p-7 bg-page border border-line rounded-2xl shadow-xs">
+            <div className="flex items-center gap-3 mb-5 pb-3 border-b border-line/60">
+              <span className="size-7 rounded-full bg-accent text-on-accent text-xs flex items-center justify-center font-black shrink-0">
                 2
               </span>
-              Site Delivery Destination
-            </h2>
+              <div>
+                <h2 className="text-base sm:text-lg font-black text-fg">Site Delivery Destination</h2>
+                <p className="text-[11px] sm:text-xs text-muted">Direct site crane offloading location</p>
+              </div>
+            </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <Field id="streetAddress" label="Site Street Address" error={fieldErrors.streetAddress} required>
+                <Field id="streetAddress" label="Site Street Address & Landmark" error={fieldErrors.streetAddress} required>
                   {(props) => (
                     <input
                       {...props}
                       name="streetAddress"
+                      autoComplete="street-address"
                       value={formData.streetAddress}
                       onChange={handleChange}
-                      placeholder="Plot 14, Commercial Avenue, Industrial Layout"
-                      className="w-full rounded-lg border border-line bg-raised py-2.5 px-3.5 text-sm font-medium focus:border-accent"
+                      placeholder="Plot 14, Commercial Avenue, Industrial Estate, Ikeja"
+                      className={cn(
+                        "w-full rounded-xl border bg-raised py-3 px-3.5 text-sm font-medium focus:border-accent focus:bg-page transition-colors",
+                        fieldErrors.streetAddress ? "border-danger ring-1 ring-danger" : "border-line"
+                      )}
                     />
                   )}
                 </Field>
@@ -295,8 +473,11 @@ export default function CheckoutPage() {
                       name="city"
                       value={formData.city}
                       onChange={handleChange}
-                      placeholder="Ikeja"
-                      className="w-full rounded-lg border border-line bg-raised py-2.5 px-3.5 text-sm font-medium focus:border-accent"
+                      placeholder="Ikeja / Lekki / Ibadan"
+                      className={cn(
+                        "w-full rounded-xl border bg-raised py-3 px-3.5 text-sm font-medium focus:border-accent focus:bg-page transition-colors",
+                        fieldErrors.city ? "border-danger ring-1 ring-danger" : "border-line"
+                      )}
                     />
                   )}
                 </Field>
@@ -311,14 +492,17 @@ export default function CheckoutPage() {
                       value={formData.state}
                       onChange={handleChange}
                       placeholder="Lagos State"
-                      className="w-full rounded-lg border border-line bg-raised py-2.5 px-3.5 text-sm font-medium focus:border-accent"
+                      className={cn(
+                        "w-full rounded-xl border bg-raised py-3 px-3.5 text-sm font-medium focus:border-accent focus:bg-page transition-colors",
+                        fieldErrors.state ? "border-danger ring-1 ring-danger" : "border-line"
+                      )}
                     />
                   )}
                 </Field>
               </div>
 
               <div className="sm:col-span-2">
-                <Field id="additionalInstructions" label="Additional Instructions (Site Access, Offloading)">
+                <Field id="additionalInstructions" label="Site Access, Offload Notes & Contact Person">
                   {(props) => (
                     <textarea
                       {...props}
@@ -326,8 +510,8 @@ export default function CheckoutPage() {
                       rows={2}
                       value={formData.additionalInstructions}
                       onChange={handleChange}
-                      placeholder="e.g. Call before dispatch, crane access available from side gate"
-                      className="w-full rounded-lg border border-line bg-raised py-2 px-3 text-sm focus:border-accent"
+                      placeholder="e.g. Call Engineer Musa on site (+234...). High-clearance gate available for long-bed crane truck."
+                      className="w-full rounded-xl border border-line bg-raised py-2.5 px-3.5 text-sm font-medium focus:border-accent focus:bg-page transition-colors"
                     />
                   )}
                 </Field>
@@ -335,27 +519,30 @@ export default function CheckoutPage() {
             </div>
           </Card>
 
-          {/* Payment Method */}
-          <Card className="p-6 bg-page border border-line rounded-2xl">
-            <h2 className="text-lg font-black text-fg mb-4 flex items-center gap-2">
-              <span className="size-6 rounded-full bg-accent text-on-accent text-xs flex items-center justify-center font-black">
+          {/* Step 3: Payment Method */}
+          <Card className="p-5 sm:p-7 bg-page border border-line rounded-2xl shadow-xs">
+            <div className="flex items-center gap-3 mb-5 pb-3 border-b border-line/60">
+              <span className="size-7 rounded-full bg-accent text-on-accent text-xs flex items-center justify-center font-black shrink-0">
                 3
               </span>
-              Payment Method
-            </h2>
+              <div>
+                <h2 className="text-base sm:text-lg font-black text-fg">Payment Terms</h2>
+                <p className="text-[11px] sm:text-xs text-muted">Select your approved payment option</p>
+              </div>
+            </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
               {[
                 {
                   id: "transfer" as PaymentMethod,
                   title: "Bank Transfer",
-                  desc: "Direct corporate bank transfer",
+                  desc: "Direct corporate account",
                   icon: Wallet,
                 },
                 {
                   id: "cash_on_delivery" as PaymentMethod,
                   title: "Pay on Delivery",
-                  desc: "Cash or POS at site handover",
+                  desc: "Transfer/POS at offload",
                   icon: Truck,
                 },
                 {
@@ -364,92 +551,156 @@ export default function CheckoutPage() {
                   desc: "Instant card checkout",
                   icon: CreditCard,
                 },
-              ].map((method) => (
-                <button
-                  key={method.id}
-                  type="button"
-                  onClick={() =>
-                    setFormData((prev) => ({ ...prev, paymentMethod: method.id }))
-                  }
-                  className={`btn-press p-4 rounded-xl border text-left flex flex-col justify-between transition-all ${
-                    formData.paymentMethod === method.id
-                      ? "border-accent bg-accent/10 ring-1 ring-accent"
-                      : "border-line bg-raised hover:border-accent"
-                  }`}
-                >
-                  <method.icon className={`size-5 mb-2 ${formData.paymentMethod === method.id ? "text-accent" : "text-muted"}`} />
-                  <div>
-                    <div className="text-xs font-black text-fg">{method.title}</div>
-                    <div className="text-[11px] text-muted mt-0.5">{method.desc}</div>
-                  </div>
-                </button>
-              ))}
+              ].map((method) => {
+                const isSelected = formData.paymentMethod === method.id;
+                return (
+                  <button
+                    key={method.id}
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({ ...prev, paymentMethod: method.id }))
+                    }
+                    className={cn(
+                      "btn-press p-4 rounded-xl border text-left flex flex-col justify-between transition-all relative cursor-pointer",
+                      isSelected
+                        ? "border-accent bg-accent/10 ring-2 ring-accent/30 shadow-xs"
+                        : "border-line bg-raised hover:border-accent/40"
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-3 w-full">
+                      <method.icon className={cn("size-5", isSelected ? "text-accent" : "text-muted")} />
+                      <div className={cn(
+                        "size-4 rounded-full border flex items-center justify-center transition-colors",
+                        isSelected ? "border-accent bg-accent text-on-accent" : "border-line bg-page"
+                      )}>
+                        {isSelected && <div className="size-1.5 rounded-full bg-white" />}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-xs font-black text-fg">{method.title}</div>
+                      <div className="text-[11px] text-muted mt-0.5">{method.desc}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Explanatory Note for Selected Method */}
+            <div className="mt-4 p-3.5 rounded-xl bg-raised border border-line/60 flex items-start gap-2.5 text-xs text-muted">
+              <Info className="size-4 text-accent shrink-0 mt-0.5" />
+              <div>
+                {formData.paymentMethod === "transfer" && (
+                  <span>
+                    <strong>Corporate Bank Transfer:</strong> An official proforma invoice with verified commercial bank details (Zenith / GTBank) will be generated. Stock is reserved immediately.
+                  </span>
+                )}
+                {formData.paymentMethod === "cash_on_delivery" && (
+                  <span>
+                    <strong>Site Inspection & Pay on Delivery:</strong> Our driver verifies bundle gauges and quantities upon arrival. Payment can be completed via bank transfer or POS before crane offloading.
+                  </span>
+                )}
+                {formData.paymentMethod === "card" && (
+                  <span>
+                    <strong>Instant Card Payment:</strong> Fast, 256-bit encrypted checkout. Payment receipt dispatched instantly and order receives priority factory scheduling.
+                  </span>
+                )}
+              </div>
             </div>
           </Card>
         </div>
 
-        {/* Right Column: Order Review & Submit */}
-        <div className="lg:col-span-5">
-          <Card className="p-6 bg-raised border border-line rounded-2xl sticky top-24">
-            <h2 className="text-lg font-black text-fg mb-4">Order Items ({items.length})</h2>
+        {/* Right Column: Order Review & Submit Card (Sticky) */}
+        <div className="lg:col-span-5 sticky top-24">
+          <Card className="p-5 sm:p-7 bg-raised border border-line rounded-3xl shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-black text-fg">Order Summary</h2>
+              <span className="text-xs font-bold bg-page border border-line px-2.5 py-1 rounded-full text-muted">
+                {items.length} {items.length === 1 ? "Item" : "Items"}
+              </span>
+            </div>
 
-            <div className="max-h-60 overflow-y-auto space-y-3 pr-2 mb-4 border-b border-line pb-4">
+            {/* Items List */}
+            <div className="max-h-72 overflow-y-auto space-y-3 pr-1 mb-5 border-b border-line pb-5">
               {items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between text-xs gap-3">
-                  <div className="truncate flex-1">
-                    <p className="font-bold text-fg truncate">{item.productName}</p>
-                    <p className="text-muted text-[11px]">
-                      {item.quantity} × {formatMoney(item.unitPrice)}
-                      {item.customSpecs?.lengthMetres && ` (${item.customSpecs.lengthMetres}m)`}
-                    </p>
+                <div key={item.id} className="flex items-start justify-between text-xs gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.productName}
+                        className="size-10 rounded-lg object-cover border border-line shrink-0"
+                      />
+                    ) : (
+                      <div className="size-10 rounded-lg bg-page border border-line flex items-center justify-center shrink-0">
+                        <Package className="size-4 text-muted" />
+                      </div>
+                    )}
+                    <div className="truncate flex-1">
+                      <p className="font-bold text-fg truncate">{item.productName}</p>
+                      <p className="text-[11px] text-muted">
+                        {item.quantity} × {formatMoney(item.unitPrice)}
+                        {item.customSpecs?.lengthMetres && ` (${item.customSpecs.lengthMetres}m)`}
+                      </p>
+                    </div>
                   </div>
-                  <span className="font-bold text-fg">{formatMoney(item.lineTotal)}</span>
+                  <span className="font-black text-fg shrink-0">{formatMoney(item.lineTotal)}</span>
                 </div>
               ))}
             </div>
 
-            <div className="space-y-2 text-sm border-b border-line pb-4">
+            {/* Calculations Breakdown */}
+            <div className="space-y-2.5 text-sm border-b border-line pb-4">
               <div className="flex justify-between">
-                <span className="text-muted">Subtotal</span>
+                <span className="text-muted text-xs">Material Total</span>
                 <span className="font-bold text-fg">{formatMoney(subtotal)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted">Estimated Delivery</span>
-                <span className="font-bold text-fg">Calculated on confirmation</span>
+                <span className="text-muted">Site Crane Offloading</span>
+                <span className="font-bold text-emerald-600">Calculated on location</span>
               </div>
             </div>
 
+            {/* Total Price Display */}
             <div className="py-4 flex justify-between items-baseline">
               <div>
-                <span className="text-base font-black text-fg block">Indicative Total</span>
-                <span className="text-[11px] text-muted">Final rates verified in order</span>
+                <span className="text-sm font-black text-fg block">Total Order Payable</span>
+                <span className="text-[11px] text-muted">Direct factory mill pricing</span>
               </div>
-              <span className="text-2xl font-black text-fg">{formatMoney(subtotal)}</span>
+              <span className="text-2xl font-black text-fg tracking-tight">{formatMoney(subtotal)}</span>
             </div>
 
+            {/* Submit Button */}
             <Button
               type="submit"
               variant="primary"
               size="lg"
               disabled={isSubmitting}
-              className="w-full py-3.5 flex items-center justify-center gap-2 font-bold text-base"
+              className="w-full py-4 flex items-center justify-center gap-2 font-bold text-base shadow-md shadow-accent/20 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
                   <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Generating Order...
+                  <span>Processing Order...</span>
                 </>
               ) : (
                 <>
                   <Lock className="size-4" />
-                  Place Verified Order
+                  <span>Place Verified Order</span>
                 </>
               )}
             </Button>
 
-            <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted">
-              <ShieldCheck className="size-4 text-emerald-600" />
-              <span>Direct transaction verified with factory stock</span>
+            {/* Trust and Hotline Info */}
+            <div className="mt-5 space-y-2 text-center text-xs text-muted border-t border-line/60 pt-4">
+              <div className="flex items-center justify-center gap-1.5 text-emerald-600 font-bold">
+                <ShieldCheck className="size-4 shrink-0" />
+                <span>Certified Factory Stock Guarantee</span>
+              </div>
+              <div className="flex items-center justify-center gap-1.5 text-muted">
+                <PhoneCall className="size-3.5 shrink-0" />
+                <span>Support hotline: {site.phone}</span>
+              </div>
             </div>
           </Card>
         </div>
