@@ -35,21 +35,21 @@ export function Drawer({
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="slide-right absolute inset-y-0 left-0 flex w-80 max-w-[85vw] flex-col border-r border-line bg-page shadow-xl"
+        className="slide-right absolute inset-y-0 left-0 flex w-[320px] max-w-[88vw] flex-col border-r border-line bg-page shadow-2xl transition-all"
       >
-        <div className="flex items-center justify-between border-b border-line px-4 py-3">
-          <span className="eyebrow">{title}</span>
+        <div className="flex items-center justify-between border-b border-line px-5 py-4">
+          <span className="text-sm font-black tracking-tight text-fg">{title}</span>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close menu"
-            className="btn-press hover:bg-raised hover:text-fg text-muted -mr-1 rounded-lg p-2"
+            className="btn-press -mr-2 flex h-9 w-9 items-center justify-center rounded-xl text-muted hover:bg-raised hover:text-fg transition-colors"
           >
             <X aria-hidden className="size-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">{children}</div>
+        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
       </div>
     </div>
   );

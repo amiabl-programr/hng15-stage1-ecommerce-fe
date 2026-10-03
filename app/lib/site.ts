@@ -44,9 +44,10 @@ export const accountNav: NavItem[] = [
   { label: "My orders", to: "/account/orders" },
 ];
 
-/**
- * Category deep links belong here — `?category=<slug>` — once the
- * catalogue endpoint returns them. Hard-coding slugs now would bake in
- * guesses that silently 404 the moment a slug differs.
- */
-export const categoryNav: NavItem[] = [];
+export const categoryNav: NavItem[] = [
+  { label: "Industrial & Longspan", to: "/products?category=industrial-sheets" },
+  { label: "Residential Step-Tile", to: "/products?category=residential-steeltile" },
+  { label: "Stone-Coated Shingles", to: "/products?category=stone-coated" },
+  { label: "Flashings & Gutters", to: "/products?category=flashings-gutters" },
+  { label: "Fasteners & Accessories", to: "/products?category=fasteners-accessories" },
+];
