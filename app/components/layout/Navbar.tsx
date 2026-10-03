@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
 import {
   HardHat,
+  Home,
   Menu,
   X,
   Search,
@@ -12,11 +13,9 @@ import {
   Wrench,
   Info,
   PhoneCall,
-  ShoppingBag,
   LogOut,
   ArrowRight,
   Truck,
-  Sparkles,
   ExternalLink,
 } from "lucide-react";
 import { Drawer } from "~/components/ui/Drawer";
@@ -66,6 +65,15 @@ const CATEGORY_ITEMS = [
   },
 ];
 
+/** Complete mobile & tablet drawer store directory items */
+const DRAWER_NAV_ITEMS = [
+  { label: "Home", to: "/", icon: Home, end: true },
+  { label: "All Products & Prices", to: "/products", icon: Package, end: false },
+  { label: "Roofing Specifications", to: "/categories", icon: Layers, end: false },
+  { label: "Custom Fabrication Specs", to: "/fabrication", icon: Wrench, end: false },
+  { label: "Factory Standards & About", to: "/about", icon: Info, end: false },
+];
+
 export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [drawerSearch, setDrawerSearch] = useState("");
@@ -74,6 +82,29 @@ export function Navbar() {
   const navigate = useNavigate();
   const { itemCount } = useCart();
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
+
+  // Close drawer if window is resized to desktop width (>= 1024px)
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setMenuOpen(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Keyboard shortcut: Cmd+K / Ctrl+K opens quick search drawer
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        openSearchMode();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (menuOpen && autoFocusSearch) {
@@ -87,8 +118,8 @@ export function Navbar() {
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
-      "btn-press rounded-lg px-3 py-2 text-sm font-bold transition-colors",
-      isActive ? "text-accent bg-accent/10" : "text-fg hover:text-accent hover:bg-raised",
+      "btn-press rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+      isActive ? "text-accent bg-accent/10 font-bold" : "text-fg hover:text-accent hover:bg-raised",
     );
 
   const handleSearchSubmit = (query: string) => {
@@ -118,13 +149,13 @@ export function Navbar() {
           <Link
             to="/"
             onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-2.5 min-w-0"
+            className="flex items-center gap-2.5 min-w-0 group"
           >
-            <div className="size-9 sm:size-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0 text-accent">
+            <div className="size-9 sm:size-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0 text-accent group-hover:bg-accent/15 transition-colors">
               <HardHat aria-hidden className="size-5" />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="truncate text-base sm:text-lg font-black tracking-tight text-fg">
+              <span className="truncate text-base sm:text-lg font-black tracking-tight text-fg group-hover:text-accent transition-colors">
                 {site.name}
               </span>
               <span className="hidden sm:inline text-[10px] font-medium text-muted truncate">
@@ -133,8 +164,8 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop Primary Nav */}
-          <nav aria-label="Primary" className="ml-auto hidden items-center gap-1 md:flex">
+          {/* Desktop Primary Nav (visible on lg and up: >= 1024px) */}
+          <nav aria-label="Primary" className="ml-auto hidden items-center gap-1 lg:flex">
             {primaryNav.map((item) => (
               <NavLink key={item.to} to={item.to} className={linkClass} end={item.to === "/"}>
                 {item.label}
@@ -142,8 +173,8 @@ export function Navbar() {
             ))}
           </nav>
 
-          {/* Desktop Search */}
-          <form role="search" onSubmit={onSearchFormSubmit} className="ml-4 hidden md:block">
+          {/* Desktop Inline Search (lg:) */}
+          <form role="search" onSubmit={onSearchFormSubmit} className="ml-3 hidden lg:block">
             <label htmlFor="nav-search" className="sr-only">
               Search products
             </label>
@@ -157,30 +188,47 @@ export function Navbar() {
                 name="q"
                 type="search"
                 placeholder="Search profiles, sheets, gauges..."
-                className="focus:border-accent w-48 rounded-xl border border-line bg-raised/50 py-2 pr-3 pl-9 text-xs lg:w-60 font-medium focus:bg-page transition-colors"
+                className="focus:border-accent w-48 xl:w-60 rounded-xl border border-line bg-raised/50 py-2 pr-8 pl-9 text-xs font-medium focus:bg-page transition-colors"
               />
+              <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-line bg-page px-1.5 py-0.5 text-[10px] font-mono text-muted">
+                ⌘K
+              </kbd>
             </div>
           </form>
 
-          {/* Actions & Mobile Controls */}
+          {/* Tablet Quick Search Trigger (md to lg) */}
+          <button
+            type="button"
+            onClick={openSearchMode}
+            aria-label="Search profiles, sheets, gauges (Ctrl+K)"
+            className="btn-press hidden md:flex lg:hidden items-center gap-2 h-10 px-3 rounded-xl border border-line bg-raised/50 text-muted hover:text-fg hover:border-accent/40 text-xs font-medium transition-colors"
+          >
+            <Search aria-hidden className="size-4 shrink-0 text-muted" />
+            <span className="truncate max-w-[130px]">Search specs...</span>
+            <kbd className="rounded border border-line bg-page px-1.5 py-0.5 text-[10px] font-mono text-muted">
+              ⌘K
+            </kbd>
+          </button>
+
+          {/* Actions & Responsive Controls */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {isAdmin && (
               <Link
                 to="/admin"
-                className="btn-press hidden items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-xs font-bold text-amber-600 hover:bg-amber-500/20 md:flex"
+                className="btn-press hidden items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-xs font-bold text-amber-600 hover:bg-amber-500/20 md:flex transition-colors"
                 title="Admin Console"
               >
                 <Shield className="size-3.5" />
-                Admin
+                <span>Admin</span>
               </Link>
             )}
 
-            {/* Mobile Quick Search Button */}
+            {/* Mobile Quick Search Button (< md) */}
             <button
               type="button"
               onClick={openSearchMode}
               aria-label="Search profiles and specifications"
-              className="btn-press flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-raised/70 text-fg hover:bg-raised active:scale-95 md:hidden"
+              className="btn-press flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-raised/70 text-fg hover:bg-raised active:scale-95 md:hidden transition-colors"
             >
               <Search aria-hidden className="size-4.5" />
             </button>
@@ -194,10 +242,10 @@ export function Navbar() {
               <CartBadge count={itemCount} />
             </Link>
 
-            {/* Desktop User Avatar / Account */}
+            {/* Tablet & Desktop User Profile / Sign in (>= md) */}
             <Link
               to={isAuthenticated ? "/account" : "/login"}
-              className="btn-press hover:bg-raised hidden items-center gap-2 rounded-xl border border-line/60 bg-raised/40 p-2 text-sm font-medium md:flex"
+              className="btn-press hover:bg-raised hidden items-center gap-2 rounded-xl border border-line/60 bg-raised/40 p-2 text-sm font-medium md:flex transition-colors"
               aria-label={isAuthenticated ? "My Account" : "Sign in"}
             >
               {user?.avatarUrl ? (
@@ -211,30 +259,35 @@ export function Navbar() {
               )}
             </Link>
 
-            {/* Mobile Navigation Toggle Button */}
+            {/* Mobile & Tablet Navigation Toggle Button (< lg) */}
             <button
               type="button"
               onClick={() => setMenuOpen((prev) => !prev)}
               aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
               aria-expanded={menuOpen}
-              className="btn-press flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-raised text-fg hover:border-accent/40 active:scale-95 lg:hidden"
-              hidden={menuOpen}
+              aria-controls="mobile-navigation-drawer"
+              className="btn-press flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-raised text-fg hover:border-accent/40 active:scale-95 lg:hidden transition-colors"
             >
-              <Menu aria-hidden className="size-5" />
+              {menuOpen ? (
+                <X aria-hidden className="size-5" />
+              ) : (
+                <Menu aria-hidden className="size-5" />
+              )}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Modern High-Craft Mobile Navigation Sheet */}
+      {/* Modern High-Craft Mobile & Tablet Navigation Sheet (Drawer) */}
       <Drawer
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         title="Store Navigation & Specifications"
         side="right"
+        containerClassName="lg:hidden"
         hideDefaultHeader
       >
-        <div className="flex flex-col h-full bg-page">
+        <div id="mobile-navigation-drawer" className="flex flex-col h-full bg-page">
           {/* Integrated Drawer Header */}
           <div className="flex h-16 shrink-0 items-center justify-between border-b border-line px-5 bg-page/80 backdrop-blur">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -256,9 +309,9 @@ export function Navbar() {
               type="button"
               onClick={() => setMenuOpen(false)}
               aria-label="Close menu"
-              className="btn-press flex size-9 items-center justify-center rounded-xl border border-line/70 bg-raised/80 text-fg hover:bg-raised active:scale-95 transition-colors"
+              className="btn-press flex size-10 items-center justify-center rounded-xl border border-line/70 bg-raised/80 text-fg hover:bg-raised active:scale-95 transition-colors"
             >
-              <X aria-hidden className="size-4.5" />
+              <X aria-hidden className="size-5" />
             </button>
           </div>
 
@@ -285,6 +338,19 @@ export function Navbar() {
                     placeholder="Search gauge, profile, sheets..."
                     className="w-full rounded-xl border border-line bg-raised py-2.5 pr-20 pl-10 text-xs font-medium focus:border-accent focus:bg-page transition-colors"
                   />
+                  {drawerSearch && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDrawerSearch("");
+                        searchInputRef.current?.focus();
+                      }}
+                      className="absolute right-16 top-1/2 -translate-y-1/2 text-muted hover:text-fg p-1"
+                      aria-label="Clear search"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  )}
                   <button
                     type="submit"
                     className="btn-press absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg bg-accent px-2.5 py-1 text-xs font-bold text-on-accent"
@@ -295,33 +361,84 @@ export function Navbar() {
               </form>
 
               {/* One-Tap Specification Chips */}
-              <div className="flex flex-wrap items-center gap-1.5 overflow-x-hidden pb-1 -mx-1 px-1 scrollbar-none">
-                {SPEC_CHIPS.map((chip) => (
-                  <button
-                    key={chip.label}
-                    type="button"
-                    onClick={() => {
-                      setDrawerSearch(chip.query);
-                      handleSearchSubmit(chip.query);
-                    }}
-                    className="btn-press shrink-0 rounded-lg border border-line bg-raised/70 px-2.5 py-1 text-[11px] font-semibold text-fg hover:border-accent hover:text-accent transition-colors"
-                  >
-                    {chip.label}
-                  </button>
-                ))}
+              <div>
+                <p className="text-[11px] font-semibold text-muted mb-1.5">Quick Specifications</p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {SPEC_CHIPS.map((chip) => (
+                    <button
+                      key={chip.label}
+                      type="button"
+                      onClick={() => {
+                        setDrawerSearch(chip.query);
+                        handleSearchSubmit(chip.query);
+                      }}
+                      className="btn-press shrink-0 rounded-lg border border-line bg-raised/80 px-2.5 py-1 text-[11px] font-semibold text-fg hover:border-accent hover:text-accent active:bg-accent/10 transition-colors"
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
               </div>
+            </div>
+
+            {/* Primary Navigation Links */}
+            <div className="space-y-1">
+              <div className="px-1 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted">
+                  Store Directory
+                </span>
+              </div>
+
+              {DRAWER_NAV_ITEMS.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  onClick={() => setMenuOpen(false)}
+                  className={({ isActive }) =>
+                    cn(
+                      "btn-press flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-bold transition-colors min-h-[44px]",
+                      isActive
+                        ? "text-accent bg-accent/10 font-bold"
+                        : "text-fg hover:bg-raised hover:text-accent",
+                    )
+                  }
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon className="size-4.5 shrink-0 text-muted" />
+                    <span>{item.label}</span>
+                  </div>
+                  <ArrowRight className="size-3.5 opacity-40" />
+                </NavLink>
+              ))}
+
+              {isAdmin && (
+                <NavLink
+                  to="/admin"
+                  onClick={() => setMenuOpen(false)}
+                  className="btn-press flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 mt-2 min-h-[44px]"
+                >
+                  <div className="flex items-center gap-3">
+                    <Shield className="size-4.5" />
+                    <span>Admin Operations Console</span>
+                  </div>
+                  <ExternalLink className="size-3.5 opacity-60" />
+                </NavLink>
+              )}
             </div>
 
             {/* Roofing Profiles & Specifications Hub */}
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-bold text-muted">Roofing Specifications</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-muted">
+                  Roofing Specifications
+                </span>
                 <Link
                   to="/categories"
                   onClick={() => setMenuOpen(false)}
                   className="text-xs font-bold text-accent hover:underline flex items-center gap-1"
                 >
-                  <span>All categories</span>
+                  <span>All profiles</span>
                   <ArrowRight className="size-3" />
                 </Link>
               </div>
@@ -332,7 +449,7 @@ export function Navbar() {
                     key={cat.title}
                     to={cat.to}
                     onClick={() => setMenuOpen(false)}
-                    className="btn-press group flex items-center justify-between rounded-xl border border-line/60 bg-raised/40 p-3 hover:bg-raised hover:border-accent/30 transition-all"
+                    className="btn-press group flex items-center justify-between rounded-xl border border-line/60 bg-raised/40 p-3 hover:bg-raised hover:border-accent/30 transition-all min-h-[44px]"
                   >
                     <div className="min-w-0 pr-2">
                       <p className="text-xs font-bold text-fg group-hover:text-accent transition-colors">
@@ -366,69 +483,6 @@ export function Navbar() {
                 <ArrowRight className="size-3.5" />
               </Link>
             </div>
-
-            {/* Primary Navigation Links */}
-            <div className="space-y-1 pt-1">
-              <div className="px-1 mb-2">
-                <span className="text-xs font-bold text-muted">Store Directory</span>
-              </div>
-
-              <NavLink
-                to="/products"
-                onClick={() => setMenuOpen(false)}
-                className={({ isActive }) =>
-                  cn(
-                    "btn-press flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors",
-                    isActive ? "text-accent bg-accent/10" : "text-fg hover:bg-raised hover:text-accent"
-                  )
-                }
-              >
-                <Package className="size-4 shrink-0 text-muted" />
-                <span>All Products &amp; Prices</span>
-              </NavLink>
-
-              <NavLink
-                to="/fabrication"
-                onClick={() => setMenuOpen(false)}
-                className={({ isActive }) =>
-                  cn(
-                    "btn-press flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors",
-                    isActive ? "text-accent bg-accent/10" : "text-fg hover:bg-raised hover:text-accent"
-                  )
-                }
-              >
-                <Wrench className="size-4 shrink-0 text-muted" />
-                <span>Custom Fabrication Specs</span>
-              </NavLink>
-
-              <NavLink
-                to="/about"
-                onClick={() => setMenuOpen(false)}
-                className={({ isActive }) =>
-                  cn(
-                    "btn-press flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors",
-                    isActive ? "text-accent bg-accent/10" : "text-fg hover:bg-raised hover:text-accent"
-                  )
-                }
-              >
-                <Info className="size-4 shrink-0 text-muted" />
-                <span>About Factory Standards</span>
-              </NavLink>
-
-              {isAdmin && (
-                <NavLink
-                  to="/admin"
-                  onClick={() => setMenuOpen(false)}
-                  className="btn-press flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 mt-2"
-                >
-                  <div className="flex items-center gap-3">
-                    <Shield className="size-4" />
-                    <span>Admin Operations Console</span>
-                  </div>
-                  <ExternalLink className="size-3.5 opacity-60" />
-                </NavLink>
-              )}
-            </div>
           </div>
 
           {/* Account & Direct Dispatch Footer */}
@@ -459,7 +513,7 @@ export function Navbar() {
                   <Link
                     to="/account/orders"
                     onClick={() => setMenuOpen(false)}
-                    className="btn-press flex-1 text-center py-1.5 rounded-lg bg-raised border border-line text-xs font-bold text-fg hover:border-accent"
+                    className="btn-press flex-1 text-center py-2 rounded-lg bg-raised border border-line text-xs font-bold text-fg hover:border-accent transition-colors"
                   >
                     My Orders &amp; Dispatch
                   </Link>
@@ -469,7 +523,7 @@ export function Navbar() {
                       logout();
                       setMenuOpen(false);
                     }}
-                    className="btn-press p-1.5 rounded-lg text-danger hover:bg-danger/10"
+                    className="btn-press p-2 rounded-lg text-danger hover:bg-danger/10 transition-colors"
                     title="Log out"
                     aria-label="Log out"
                   >
@@ -491,7 +545,7 @@ export function Navbar() {
             {/* Direct Engineer Dispatch Hotline */}
             <a
               href={`tel:${site.phone.replace(/\s+/g, "")}`}
-              className="btn-press flex items-center justify-center gap-2 w-full rounded-xl border border-line bg-page py-2 px-3 text-xs font-medium text-fg hover:border-accent transition-colors"
+              className="btn-press flex items-center justify-center gap-2 w-full rounded-xl border border-line bg-page py-2.5 px-3 text-xs font-medium text-fg hover:border-accent transition-colors min-h-[44px]"
             >
               <PhoneCall className="size-3.5 text-emerald-600" />
               <span>Direct Mill Dispatch: <strong>{site.phone}</strong></span>
