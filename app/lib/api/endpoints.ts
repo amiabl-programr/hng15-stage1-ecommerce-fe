@@ -119,10 +119,6 @@ export async function getOrderById(id: string): Promise<{ success: true; order: 
 
 // ── Auth & Account ─────────────────────────────────────────────────────────────
 
-export async function loginWithEmail(email: string): Promise<{ success: true; user: Profile; sessionToken: string }> {
-  return api.post<{ success: true; user: Profile; sessionToken: string }>('/api/auth/login', { email });
-}
-
 export async function getMe(): Promise<MeResponse> {
   return api.get<MeResponse>('/api/auth/me');
 }

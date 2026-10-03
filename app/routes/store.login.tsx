@@ -11,7 +11,8 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { isAuthenticated, isInitialized } = useAuth();
-  const redirectPath = searchParams.get("redirect") || searchParams.get("returnTo") || "/account";
+  const redirectPath = searchParams.get("redirect") || searchParams.get("returnTo") || searchParams.get("next") || "/account";
+  const errorMessage = searchParams.get("error");
 
   useEffect(() => {
     if (isInitialized && isAuthenticated) {
@@ -38,6 +39,12 @@ export default function LoginPage() {
           <p className="text-sm text-slate-600 mb-8">
             Sign in to track orders, manage active sessions, or access administrative operations.
           </p>
+
+          {errorMessage && (
+            <div className="w-full mb-6 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl text-left">
+              Authentication failed: {errorMessage}. Please try signing in again.
+            </div>
+          )}
 
           <Button
             type="button"
