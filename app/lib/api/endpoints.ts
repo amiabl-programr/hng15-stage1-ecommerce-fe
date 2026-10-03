@@ -1,10 +1,12 @@
 import { api } from './client';
 import type {
   AccountOverviewResponse,
+  AddToCartRequest,
   AdminFabricationListResponse,
   AdminImageListResponse,
   AdminImage,
   AdminStatsResponse,
+  CartResponse,
   Category,
   CategoryListResponse,
   CreateOrderRequest,
@@ -24,8 +26,10 @@ import type {
   ProductBySlugResponse,
   ProductListQuery,
   ProductListResponse,
+  Profile,
   SessionListResponse,
   SetPermissionInput,
+  UpdateCartItemRequest,
   UpdateFabricationStatusInput,
   UpdateImageInput,
   UpdateOrderStatusInput,
@@ -66,6 +70,31 @@ export async function submitFabricationRequest(
   return api.post<FabricationSubmittedResponse>('/api/fabrication-requests', data);
 }
 
+// ── Cart ──────────────────────────────────────────────────────────────────────
+
+export async function getCart(): Promise<CartResponse> {
+  return api.get<CartResponse>('/api/cart');
+}
+
+export async function addToCart(data: AddToCartRequest): Promise<CartResponse> {
+  return api.post<CartResponse>('/api/cart', data);
+}
+
+export async function updateCartItem(
+  itemId: string,
+  data: UpdateCartItemRequest
+): Promise<CartResponse> {
+  return api.patch<CartResponse>(`/api/cart/${itemId}`, data);
+}
+
+export async function removeCartItem(itemId: string): Promise<CartResponse> {
+  return api.delete<CartResponse>(`/api/cart/${itemId}`);
+}
+
+export async function clearCart(): Promise<{ success: true }> {
+  return api.delete<{ success: true }>('/api/cart');
+}
+
 // ── Checkout & Orders ──────────────────────────────────────────────────────────
 
 export async function createOrder(data: CreateOrderRequest): Promise<CreateOrderResponse> {
@@ -89,6 +118,10 @@ export async function getOrderById(id: string): Promise<{ success: true; order: 
 }
 
 // ── Auth & Account ─────────────────────────────────────────────────────────────
+
+export async function loginWithEmail(email: string): Promise<{ success: true; user: Profile; sessionToken: string }> {
+  return api.post<{ success: true; user: Profile; sessionToken: string }>('/api/auth/login', { email });
+}
 
 export async function getMe(): Promise<MeResponse> {
   return api.get<MeResponse>('/api/auth/me');

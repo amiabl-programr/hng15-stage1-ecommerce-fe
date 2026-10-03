@@ -11,6 +11,7 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import { useSessionStore } from "~/store/session";
+import { useCartStore } from "~/store/cart";
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/icon.svg", type: "image/svg+xml" },
@@ -47,7 +48,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   useEffect(() => {
-    useSessionStore.getState().fetchSession();
+    useSessionStore.getState().fetchSession().then((user) => {
+      if (user) {
+        useCartStore.getState().syncFromServer();
+      }
+    });
   }, []);
 
   return <Outlet />;

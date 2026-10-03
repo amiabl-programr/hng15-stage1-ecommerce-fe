@@ -198,6 +198,38 @@ export interface CustomSpecs {
   notes?: string;
 }
 
+export interface ServerCartItem {
+  id: string;
+  productId: string;
+  variantId: string | null;
+  productName: string;
+  productSlug: string;
+  mediaUrl: string | null;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+  customSpecs: CustomSpecs | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CartResponse {
+  success: true;
+  items: ServerCartItem[];
+  subtotal: number;
+}
+
+export interface AddToCartRequest {
+  productId: string;
+  variantId?: string;
+  quantity: number;
+  customSpecs?: CustomSpecs;
+}
+
+export interface UpdateCartItemRequest {
+  quantity: number;
+}
+
 export interface OrderItemRequest {
   productId: string;
   variantId?: string;

@@ -1,9 +1,17 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { CustomSpecs, Product, ProductType, ProductVariant, UnitType } from '~/types/api';
+import type { CustomSpecs, Product, ProductType, ProductVariant, UnitType, ServerCartItem } from '~/types/api';
+import {
+  getCart as apiGetCart,
+  addToCart as apiAddToCart,
+  updateCartItem as apiUpdateCartItem,
+  removeCartItem as apiRemoveCartItem,
+  clearCart as apiClearCart,
+} from '~/lib/api/endpoints';
 
 export interface CartItem {
-  id: string; // unique composite key
+  id: string; // composite key or server id
+  serverId?: string;
   productId: string;
   productName: string;
   slug: string;
@@ -41,11 +49,30 @@ export function calculateLineTotal(
   return Math.round(unitPrice * quantity);
 }
 
+function mapServerItemToCartItem(si: ServerCartItem): CartItem {
+  return {
+    id: si.id,
+    serverId: si.id,
+    productId: si.productId,
+    productName: si.productName,
+    slug: si.productSlug,
+    variantId: si.variantId ?? undefined,
+    unitPrice: si.unitPrice,
+    productType: 'standard',
+    unitType: 'piece',
+    quantity: si.quantity,
+    customSpecs: si.customSpecs ?? undefined,
+    imageUrl: si.mediaUrl ?? undefined,
+    lineTotal: si.lineTotal,
+  };
+}
+
 interface CartStoreState {
   items: CartItem[];
   isHydrated: boolean;
 
   setHydrated: (state: boolean) => void;
+  syncFromServer: () => Promise<void>;
   addItem: (input: {
     product: Product;
     variant?: ProductVariant | null;
@@ -65,6 +92,18 @@ export const useCartStore = create<CartStoreState>()(
 
       setHydrated: (state: boolean) => set({ isHydrated: state }),
 
+      syncFromServer: async () => {
+        try {
+          const res = await apiGetCart();
+          if (res && Array.isArray(res.items)) {
+            const mapped = res.items.map(mapServerItemToCartItem);
+            set({ items: mapped });
+          }
+        } catch {
+          // Guest or network failure; continue with local cart
+        }
+      },
+
       addItem: ({ product, variant, quantity, customSpecs }) => {
         if (quantity <= 0) return;
 
@@ -73,7 +112,7 @@ export const useCartStore = create<CartStoreState>()(
         const primaryMedia = product.media.find((m) => m.isPrimary) || product.media[0];
 
         set((state) => {
-          const existingIndex = state.items.findIndex((item) => item.id === itemId);
+          const existingIndex = state.items.findIndex((item) => item.id === itemId || item.serverId === itemId);
 
           if (existingIndex > -1) {
             const updatedItems = [...state.items];
@@ -120,17 +159,35 @@ export const useCartStore = create<CartStoreState>()(
 
           return { items: [...state.items, newItem] };
         });
+
+        // Sync with backend in background
+        apiAddToCart({
+          productId: product.id,
+          variantId: variant?.id,
+          quantity,
+          customSpecs,
+        })
+          .then((res) => {
+            if (res && Array.isArray(res.items)) {
+              set({ items: res.items.map(mapServerItemToCartItem) });
+            }
+          })
+          .catch(() => {
+            // Ignored if user not logged in
+          });
       },
 
       updateQuantity: (id: string, quantity: number) => {
+        const currentItem = get().items.find((item) => item.id === id || item.serverId === id);
+
         set((state) => {
           if (quantity <= 0) {
-            return { items: state.items.filter((item) => item.id !== id) };
+            return { items: state.items.filter((item) => item.id !== id && item.serverId !== id) };
           }
 
           return {
             items: state.items.map((item) => {
-              if (item.id === id) {
+              if (item.id === id || item.serverId === id) {
                 return {
                   ...item,
                   quantity,
@@ -146,16 +203,41 @@ export const useCartStore = create<CartStoreState>()(
             }),
           };
         });
+
+        const targetId = currentItem?.serverId || id;
+        if (targetId) {
+          apiUpdateCartItem(targetId, { quantity })
+            .then((res) => {
+              if (res && Array.isArray(res.items)) {
+                set({ items: res.items.map(mapServerItemToCartItem) });
+              }
+            })
+            .catch(() => {});
+        }
       },
 
       removeItem: (id: string) => {
+        const currentItem = get().items.find((item) => item.id === id || item.serverId === id);
+        const targetId = currentItem?.serverId || id;
+
         set((state) => ({
-          items: state.items.filter((item) => item.id !== id),
+          items: state.items.filter((item) => item.id !== id && item.serverId !== id),
         }));
+
+        if (targetId) {
+          apiRemoveCartItem(targetId)
+            .then((res) => {
+              if (res && Array.isArray(res.items)) {
+                set({ items: res.items.map(mapServerItemToCartItem) });
+              }
+            })
+            .catch(() => {});
+        }
       },
 
       clearCart: () => {
         set({ items: [] });
+        apiClearCart().catch(() => {});
       },
     }),
     {
@@ -173,6 +255,8 @@ export const useCartStore = create<CartStoreState>()(
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated(true);
+        // Automatically sync with server once hydrated
+        state?.syncFromServer();
       },
     }
   )
@@ -189,6 +273,7 @@ export function useCart() {
     itemCount: isHydrated ? itemCount : 0,
     subtotal: isHydrated ? subtotal : 0,
     isHydrated,
+    syncFromServer: store.syncFromServer,
     addItem: store.addItem,
     updateQuantity: store.updateQuantity,
     removeItem: store.removeItem,
