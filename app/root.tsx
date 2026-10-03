@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   isRouteErrorResponse,
   Links,
@@ -9,6 +10,7 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import { useSessionStore } from "~/store/session";
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/icon.svg", type: "image/svg+xml" },
@@ -44,6 +46,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  useEffect(() => {
+    useSessionStore.getState().fetchSession();
+  }, []);
+
   return <Outlet />;
 }
 

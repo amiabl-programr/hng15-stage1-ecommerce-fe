@@ -13,6 +13,6 @@ export default defineConfig({
     setupFiles: ["./test/setup.ts"],
     include: ["app/**/*.test.{ts,tsx}"],
     css: false,
-    pool: "vmThreads",
+    pool: "forks",
   },
 });

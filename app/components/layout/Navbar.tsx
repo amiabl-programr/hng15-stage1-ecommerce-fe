@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
-import { HardHat, Menu, Search, User } from "lucide-react";
+import { HardHat, Menu, Search, User, Shield } from "lucide-react";
 import { Drawer } from "~/components/ui/Drawer";
 import { CartBadge } from "~/components/cart/CartBadge";
 import { primaryNav, site } from "~/lib/site";
 import { cn } from "~/lib/cn";
+import { useCart } from "~/store/cart";
+import { useAuth } from "~/store/session";
 
 export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { itemCount } = useCart();
+  const { user, isAuthenticated, isAdmin } = useAuth();
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
@@ -64,21 +68,40 @@ export function Navbar() {
             </div>
           </form>
 
-          <div className="ml-auto flex items-center gap-1 md:ml-0">
+          <div className="ml-auto flex items-center gap-2 md:ml-0">
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="btn-press hidden items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-xs font-bold text-amber-600 hover:bg-amber-500/20 md:flex"
+                title="Admin Console"
+              >
+                <Shield className="size-3.5" />
+                Admin
+              </Link>
+            )}
+
             <Link
               to="/cart"
               className="btn-press hover:bg-raised rounded-lg p-2"
               aria-label="Cart"
             >
-              <CartBadge count={0} />
+              <CartBadge count={itemCount} />
             </Link>
 
             <Link
-              to="/login"
-              className="btn-press hover:bg-raised hidden rounded-lg p-2 md:block"
-              aria-label="Sign in"
+              to={isAuthenticated ? "/account" : "/login"}
+              className="btn-press hover:bg-raised hidden items-center gap-2 rounded-lg p-2 text-sm font-medium md:flex"
+              aria-label={isAuthenticated ? "My Account" : "Sign in"}
             >
-              <User aria-hidden className="size-5" />
+              {user?.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.fullName || "User Avatar"}
+                  className="size-6 rounded-full object-cover border border-line"
+                />
+              ) : (
+                <User aria-hidden className="size-5" />
+              )}
             </Link>
 
             <button
@@ -112,6 +135,15 @@ export function Navbar() {
               {item.label}
             </NavLink>
           ))}
+          {isAdmin && (
+            <NavLink
+              to="/admin"
+              onClick={() => setMenuOpen(false)}
+              className="btn-press block rounded-lg px-3 py-3 text-sm font-bold text-amber-600 bg-amber-500/10"
+            >
+              Admin Console
+            </NavLink>
+          )}
         </nav>
 
         <form role="search" onSubmit={onSearch} className="mt-4">
@@ -135,12 +167,20 @@ export function Navbar() {
 
         <div className="mt-4 border-t border-line pt-4">
           <Link
-            to="/login"
+            to={isAuthenticated ? "/account" : "/login"}
             onClick={() => setMenuOpen(false)}
             className="btn-press flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-bold"
           >
-            <User aria-hidden className="size-4" />
-            Sign in
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.fullName || "User Avatar"}
+                className="size-5 rounded-full object-cover"
+              />
+            ) : (
+              <User aria-hidden className="size-4" />
+            )}
+            {isAuthenticated ? (user?.fullName || "Account") : "Sign in"}
           </Link>
         </div>
       </Drawer>
