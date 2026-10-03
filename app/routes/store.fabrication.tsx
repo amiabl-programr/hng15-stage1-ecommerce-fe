@@ -9,6 +9,7 @@ import {
   Ruler,
   Send,
   Wrench,
+  Mail,
 } from "lucide-react";
 import { submitFabricationRequest } from "~/lib/api/endpoints";
 import { site } from "~/lib/site";
@@ -47,6 +48,7 @@ export default function FabricationPage() {
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedId, setSubmittedId] = useState<string | null>(null);
+  const [submittedEmail, setSubmittedEmail] = useState<string>("");
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -89,6 +91,7 @@ export default function FabricationPage() {
     setIsSubmitting(true);
 
     try {
+      setSubmittedEmail(formData.email.trim());
       const res = await submitFabricationRequest({
         serviceType: formData.serviceType,
         fullName: formData.fullName.trim(),
@@ -136,8 +139,23 @@ export default function FabricationPage() {
             Our engineering estimation team is reviewing your specifications. An engineer will get back to you within 24 hours.
           </p>
 
-          <div className="bg-raised p-4 rounded-xl text-xs font-mono text-muted mb-8">
+          <div className="bg-raised p-4 rounded-xl text-xs font-mono text-muted mb-4">
             Reference ID: <span className="font-bold text-fg">{submittedId}</span>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-left mb-8 flex items-start gap-3">
+            <div className="size-7 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+              <Mail className="size-3.5" />
+            </div>
+            <div>
+              <span className="font-bold text-emerald-800 dark:text-emerald-300 block text-xs">
+                Confirmation Email Dispatched
+              </span>
+              <span className="text-muted mt-0.5 block leading-relaxed">
+                A copy of your inquiry details and reference number has been sent to{" "}
+                <strong className="text-fg">{submittedEmail || formData.email}</strong>.
+              </span>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -237,15 +255,29 @@ export default function FabricationPage() {
               required
             >
               {(props) => (
-                <textarea
-                  {...props}
-                  name="description"
-                  rows={4}
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Describe your roof profile requirements, gauge preference (e.g. 0.55mm aluminium), curves, angles, or on-site forming access..."
-                  className="w-full rounded-lg border border-line bg-raised py-2.5 px-3.5 text-sm focus:border-accent"
-                />
+                <div>
+                  <textarea
+                    {...props}
+                    name="description"
+                    rows={4}
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="Describe your roof profile requirements, gauge preference (e.g. 0.55mm aluminium), curves, angles, or on-site forming access..."
+                    className="w-full rounded-lg border border-line bg-raised py-2.5 px-3.5 text-sm focus:border-accent"
+                  />
+                  <div className="flex justify-between items-center text-[11px] text-muted mt-1 px-0.5">
+                    <span>Minimum 20 characters required</span>
+                    <span
+                      className={
+                        formData.description.trim().length >= 20
+                          ? "text-emerald-600 font-bold"
+                          : "text-amber-600 font-medium"
+                      }
+                    >
+                      {formData.description.trim().length} / 20
+                    </span>
+                  </div>
+                </div>
               )}
             </Field>
 

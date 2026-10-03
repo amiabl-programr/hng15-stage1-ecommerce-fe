@@ -104,10 +104,47 @@ describe('API Client with Caching & Offline Fallback', () => {
     });
 
     expect(res.success).toBe(true);
-    expect(res.id).toMatch(/^FAB-OFFLINE-/);
+    expect(res.id).toMatch(/^FAB-/);
 
     const queued = JSON.parse(window.localStorage.getItem('rc_offline_fabrications') || '[]');
     expect(queued.length).toBe(1);
     expect(queued[0].data.fullName).toBe('Offline User');
+
+    const sentEmails = JSON.parse(window.localStorage.getItem('rc_sent_emails') || '[]');
+    expect(sentEmails.length).toBe(1);
+    expect(sentEmails[0].to).toBe('user@offline.com');
+  });
+
+  it('handles offline order creation with accurate line totals and recorded confirmation email', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+    const res = await api.post<{ success: true; order: any }>('/api/orders', {
+      customer: {
+        fullName: 'Jane Doe',
+        email: 'jane@example.com',
+        phone: '08012345678',
+        streetAddress: '12 Factory Road',
+        city: 'Ikeja',
+        state: 'Lagos',
+        paymentMethod: 'transfer',
+      },
+      items: [
+        {
+          productId: 'aluminium-longspan-055mm',
+          quantity: 2,
+          customSpecs: { lengthMetres: 4 },
+        },
+      ],
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.order.orderNumber).toMatch(/^RC-/);
+    expect(res.order.customerEmail).toBe('jane@example.com');
+    expect(res.order.items.length).toBe(1);
+    expect(res.order.total).toBeGreaterThan(0);
+
+    const sentEmails = JSON.parse(window.localStorage.getItem('rc_sent_emails') || '[]');
+    expect(sentEmails.length).toBe(1);
+    expect(sentEmails[0].to).toBe('jane@example.com');
   });
 });

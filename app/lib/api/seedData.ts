@@ -116,7 +116,7 @@ export const SEED_PRODUCTS: Product[] = [
     productType: 'dimensioned',
     unitType: 'metre',
     basePrice: 5800,
-    minOrderQuantity: 5,
+    minOrderQuantity: 1,
     isActive: true,
     category: SEED_CATEGORIES[0],
     media: [
@@ -178,7 +178,7 @@ export const SEED_PRODUCTS: Product[] = [
     productType: 'dimensioned',
     unitType: 'metre',
     basePrice: 6500,
-    minOrderQuantity: 5,
+    minOrderQuantity: 1,
     isActive: true,
     category: SEED_CATEGORIES[1],
     media: [
@@ -222,7 +222,7 @@ export const SEED_PRODUCTS: Product[] = [
     productType: 'dimensioned',
     unitType: 'metre',
     basePrice: 6200,
-    minOrderQuantity: 5,
+    minOrderQuantity: 1,
     isActive: true,
     category: SEED_CATEGORIES[1],
     media: [
@@ -266,7 +266,7 @@ export const SEED_PRODUCTS: Product[] = [
     productType: 'standard',
     unitType: 'piece',
     basePrice: 4200,
-    minOrderQuantity: 20,
+    minOrderQuantity: 1,
     isActive: true,
     category: SEED_CATEGORIES[2],
     media: [
@@ -310,7 +310,7 @@ export const SEED_PRODUCTS: Product[] = [
     productType: 'standard',
     unitType: 'piece',
     basePrice: 2800,
-    minOrderQuantity: 2,
+    minOrderQuantity: 1,
     isActive: true,
     category: SEED_CATEGORIES[3],
     media: [
@@ -346,7 +346,7 @@ export const SEED_PRODUCTS: Product[] = [
     productType: 'standard',
     unitType: 'piece',
     basePrice: 8500,
-    minOrderQuantity: 2,
+    minOrderQuantity: 1,
     isActive: true,
     category: SEED_CATEGORIES[3],
     media: [

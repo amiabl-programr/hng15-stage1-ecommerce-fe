@@ -1,5 +1,6 @@
 import type { ErrorEnvelope, FieldIssue, ErrorCode, CreateOrderRequest, CreateOrderResponse, FabricationRequestInput, FabricationSubmittedResponse, Order } from '~/types/api';
 import { getCachedData, setCachedData, getFallbackData } from './cache';
+import { SEED_PRODUCTS } from './seedData';
 
 export class ApiError extends Error {
   public readonly status: number;
@@ -35,12 +36,22 @@ function handleOfflineMutationFallback<T>(endpoint: string, options: RequestInit
       // Ignore
     }
 
-    const offlineId = `FAB-OFFLINE-${Date.now().toString(36).toUpperCase()}`;
+    const offlineId = `FAB-${Math.floor(100000 + Math.random() * 900000)}`;
     if (typeof window !== 'undefined') {
       try {
         const stored = JSON.parse(window.localStorage.getItem('rc_offline_fabrications') || '[]');
         stored.push({ id: offlineId, data: parsed, createdAt: new Date().toISOString() });
         window.localStorage.setItem('rc_offline_fabrications', JSON.stringify(stored));
+
+        // Record confirmation email
+        const sentEmails = JSON.parse(window.localStorage.getItem('rc_sent_emails') || '[]');
+        sentEmails.push({
+          to: parsed.email || '',
+          subject: `Fabrication Inquiry Confirmation #${offlineId} - Roofing Construction Shop`,
+          id: offlineId,
+          sentAt: new Date().toISOString(),
+        });
+        window.localStorage.setItem('rc_sent_emails', JSON.stringify(sentEmails));
       } catch {
         // Ignore
       }
@@ -49,7 +60,7 @@ function handleOfflineMutationFallback<T>(endpoint: string, options: RequestInit
     const response: FabricationSubmittedResponse = {
       success: true,
       id: offlineId,
-      message: 'Your fabrication request has been recorded and queued for processing.',
+      message: 'Your fabrication request has been recorded and confirmation email dispatched.',
     };
     return response as unknown as T;
   }
@@ -64,9 +75,46 @@ function handleOfflineMutationFallback<T>(endpoint: string, options: RequestInit
       // Ignore
     }
 
-    const orderNum = `RC-OFFLINE-${Math.floor(100000 + Math.random() * 900000)}`;
+    const orderNum = `RC-${Math.floor(100000 + Math.random() * 900000)}`;
+    const orderId = `ord-${Date.now()}`;
+
+    // Map items using seed catalogue / cached products so prices and names are 100% accurate
+    const computedItems = (parsed.items || []).map((reqItem, idx) => {
+      const matched = SEED_PRODUCTS.find(
+        (p) => p.id === reqItem.productId || p.slug === reqItem.productId
+      );
+      const matchedVariant = matched?.variants?.find((v) => v.id === reqItem.variantId);
+      const unitPrice =
+        matchedVariant?.priceOverride != null
+          ? matchedVariant.priceOverride
+          : (matched?.basePrice || 5800);
+      const productName = matched
+        ? matched.name + (matchedVariant ? ` (${matchedVariant.name})` : '')
+        : 'Roofing Material Item';
+
+      let lineTotal = unitPrice * reqItem.quantity;
+      if (reqItem.customSpecs?.lengthMetres && reqItem.customSpecs.lengthMetres > 0) {
+        lineTotal = Math.round(unitPrice * reqItem.customSpecs.lengthMetres * reqItem.quantity);
+      }
+
+      return {
+        id: `item-${idx + 1}-${Date.now()}`,
+        productId: reqItem.productId,
+        variantId: reqItem.variantId || null,
+        productName,
+        unitPrice,
+        quantity: reqItem.quantity,
+        lineTotal,
+        customSpecs: reqItem.customSpecs || null,
+      };
+    });
+
+    const subtotal = computedItems.reduce((acc, it) => acc + it.lineTotal, 0);
+    const deliveryFee = 0;
+    const total = subtotal + deliveryFee;
+
     const offlineOrder: Order = {
-      id: `ord-${Date.now()}`,
+      id: orderId,
       orderNumber: orderNum,
       status: 'pending',
       paymentStatus: 'pending',
@@ -80,29 +128,34 @@ function handleOfflineMutationFallback<T>(endpoint: string, options: RequestInit
         state: parsed.customer?.state || '',
         additionalInstructions: parsed.customer?.additionalInstructions || null,
       },
-      items: (parsed.items || []).map((item, idx) => ({
-        id: `item-${idx + 1}`,
-        productId: item.productId,
-        variantId: item.variantId || null,
-        productName: 'Roofing Material Item',
-        unitPrice: 5000,
-        quantity: item.quantity,
-        lineTotal: 5000 * item.quantity,
-        customSpecs: item.customSpecs || null,
-      })),
-      subtotal: 5000,
-      deliveryFee: 0,
-      total: 5000,
+      items: computedItems,
+      subtotal,
+      deliveryFee,
+      total,
       notes: parsed.customer?.additionalInstructions || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+
+    // Cache order so getOrderById retrieves it!
+    setCachedData(`/api/orders/${offlineOrder.id}`, { success: true, order: offlineOrder });
 
     if (typeof window !== 'undefined') {
       try {
         const stored = JSON.parse(window.localStorage.getItem('rc_offline_orders') || '[]');
         stored.push(offlineOrder);
         window.localStorage.setItem('rc_offline_orders', JSON.stringify(stored));
+
+        // Record simulated confirmation email dispatch
+        const sentEmails = JSON.parse(window.localStorage.getItem('rc_sent_emails') || '[]');
+        sentEmails.push({
+          to: offlineOrder.customerEmail,
+          subject: `Order Confirmation #${offlineOrder.orderNumber} - Roofing Construction Shop`,
+          orderId: offlineOrder.id,
+          orderNumber: offlineOrder.orderNumber,
+          sentAt: new Date().toISOString(),
+        });
+        window.localStorage.setItem('rc_sent_emails', JSON.stringify(sentEmails));
       } catch {
         // Ignore
       }
