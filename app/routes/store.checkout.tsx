@@ -15,7 +15,7 @@ import {
   Truck,
   Wallet,
 } from "lucide-react";
-import { useCart } from "~/store/cart";
+import { cleanCustomSpecs, useCart } from "~/store/cart";
 import { useAuth } from "~/store/session";
 import { createOrder } from "~/lib/api/endpoints";
 import { formatMoney } from "~/lib/format";
@@ -27,6 +27,8 @@ import { Field } from "~/components/ui/Field";
 import { cn } from "~/lib/cn";
 import type { PaymentMethod } from "~/types/api";
 
+const DELIVERY_FEE = 15000;
+
 export function meta() {
   return [{ title: `Secure Checkout — ${site.name}` }];
 }
@@ -34,6 +36,7 @@ export function meta() {
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, subtotal, isHydrated, clearCart } = useCart();
+  const totalPayable = subtotal + DELIVERY_FEE;
   const { user, isAuthenticated, isLoading, isInitialized, fetchSession } = useAuth();
   const [checkingAuth, setCheckingAuth] = useState(true);
 
@@ -195,16 +198,9 @@ export default function CheckoutPage() {
         },
         items: items.map((item) => ({
           productId: item.productId,
-          variantId: item.variantId || undefined,
+          variantId: item.variantId?.trim() || undefined,
           quantity: item.quantity,
-          customSpecs: item.customSpecs
-            ? {
-                lengthMetres: item.customSpecs.lengthMetres,
-                colour: item.customSpecs.colour,
-                finish: item.customSpecs.finish,
-                notes: item.customSpecs.notes,
-              }
-            : undefined,
+          customSpecs: cleanCustomSpecs(item.customSpecs),
         })),
       };
 
@@ -213,7 +209,8 @@ export default function CheckoutPage() {
       navigate(
         `/checkout/success?orderNumber=${encodeURIComponent(
           res.order.orderNumber
-        )}&id=${encodeURIComponent(res.order.id)}`
+        )}&id=${encodeURIComponent(res.order.id)}`,
+        { state: { order: res.order } }
       );
     } catch (err) {
       if (err instanceof ApiError) {
@@ -284,7 +281,7 @@ export default function CheckoutPage() {
             />
           </div>
           <span className="text-base font-black text-fg tracking-tight">
-            {formatMoney(subtotal)}
+            {formatMoney(totalPayable)}
           </span>
         </button>
 
@@ -321,9 +318,13 @@ export default function CheckoutPage() {
                 <span>Material Subtotal</span>
                 <span className="font-bold text-fg">{formatMoney(subtotal)}</span>
               </div>
-              <div className="flex justify-between text-xs">
-                <span>Site Offload Logistics</span>
-                <span className="font-bold text-emerald-600">Verified upon dispatch</span>
+              <div className="flex justify-between text-muted">
+                <span>Standard Delivery Logistics</span>
+                <span className="font-bold text-fg">{formatMoney(DELIVERY_FEE)}</span>
+              </div>
+              <div className="flex justify-between text-xs pt-1.5 border-t border-line font-black text-fg">
+                <span>Total Payable</span>
+                <span className="text-sm font-black text-accent">{formatMoney(totalPayable)}</span>
               </div>
             </div>
           </div>
@@ -656,8 +657,8 @@ export default function CheckoutPage() {
                 <span className="font-bold text-fg">{formatMoney(subtotal)}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted">Site Crane Offloading</span>
-                <span className="font-bold text-emerald-600">Calculated on location</span>
+                <span className="text-muted">Standard Delivery Logistics</span>
+                <span className="font-bold text-fg">{formatMoney(DELIVERY_FEE)}</span>
               </div>
             </div>
 
@@ -665,9 +666,9 @@ export default function CheckoutPage() {
             <div className="py-4 flex justify-between items-baseline">
               <div>
                 <span className="text-sm font-black text-fg block">Total Order Payable</span>
-                <span className="text-[11px] text-muted">Direct factory mill pricing</span>
+                <span className="text-[11px] text-muted">Includes materials & logistics</span>
               </div>
-              <span className="text-2xl font-black text-fg tracking-tight">{formatMoney(subtotal)}</span>
+              <span className="text-2xl font-black text-fg tracking-tight">{formatMoney(totalPayable)}</span>
             </div>
 
             {/* Submit Button */}
