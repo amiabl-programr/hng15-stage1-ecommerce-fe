@@ -15,7 +15,7 @@ import type {
   ProductListResponse,
 } from '~/types/api';
 
-const CACHE_PREFIX = 'rc_cache_v1:';
+const CACHE_PREFIX = 'rc_cache_v2:';
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 interface CacheEntry<T> {

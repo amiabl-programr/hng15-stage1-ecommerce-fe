@@ -20,8 +20,8 @@ describe('API Cache Layer', () => {
   });
 
   it('generates consistent cache keys with prefix', () => {
-    expect(getCacheKey('/api/products')).toBe('rc_cache_v1:/api/products');
-    expect(getCacheKey('api/products')).toBe('rc_cache_v1:/api/products');
+    expect(getCacheKey('/api/products')).toBe('rc_cache_v2:/api/products');
+    expect(getCacheKey('api/products')).toBe('rc_cache_v2:/api/products');
   });
 
   it('stores and retrieves cached data from memory and localStorage', () => {
@@ -32,7 +32,7 @@ describe('API Cache Layer', () => {
     expect(retrieved).toEqual(mockData);
 
     // Verify written to localStorage
-    const rawLocal = window.localStorage.getItem('rc_cache_v1:/api/test-endpoint');
+    const rawLocal = window.localStorage.getItem('rc_cache_v2:/api/test-endpoint');
     expect(rawLocal).toBeTruthy();
     expect(JSON.parse(rawLocal!).data).toEqual(mockData);
   });
@@ -63,7 +63,7 @@ describe('API Cache Layer', () => {
     expect(fallback).not.toBeNull();
     expect(fallback?.success).toBe(true);
     expect(fallback?.items.length).toBeGreaterThanOrEqual(4);
-    expect(fallback?.items.some((c) => c.slug === 'industrial-sheets')).toBe(true);
+    expect(fallback?.items.some((c) => c.slug === 'roofing-sheets')).toBe(true);
   });
 
   it('returns high-quality fallback data for products catalogue and category filtering', () => {
@@ -72,20 +72,20 @@ describe('API Cache Layer', () => {
     expect(fallbackAll?.items.length).toBeGreaterThanOrEqual(5);
 
     const fallbackFiltered = getFallbackData<ProductListResponse>(
-      '/api/products?category=industrial-sheets'
+      '/api/products?category=roofing-sheets'
     );
     expect(fallbackFiltered).not.toBeNull();
-    expect(fallbackFiltered?.items.every((p) => p.category?.slug === 'industrial-sheets')).toBe(
+    expect(fallbackFiltered?.items.every((p) => p.category?.slug === 'roofing-sheets')).toBe(
       true
     );
   });
 
   it('returns fallback product details by slug', () => {
     const fallback = getFallbackData<ProductBySlugResponse>(
-      '/api/products/aluminium-longspan-055mm'
+      '/api/products/premium-longspan-aluminium-roofing-sheet'
     );
     expect(fallback).not.toBeNull();
-    expect(fallback?.product.name).toContain('Aluminium Longspan');
+    expect(fallback?.product.name).toContain('Premium Longspan');
     expect(fallback?.product.profileKind).toBe('longspan');
   });
 });

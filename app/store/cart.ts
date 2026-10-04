@@ -152,40 +152,45 @@ export const useCartStore = create<CartStoreState>()(
           });
 
           if (unsyncedItems.length > 0) {
+            let anyAdded = false;
             // Push guest/offline items to user's server cart
             for (const item of unsyncedItems) {
               try {
-                await apiAddToCart({
+                const addRes = await apiAddToCart({
                   productId: item.productId,
                   variantId: item.variantId || undefined,
                   quantity: item.quantity,
                   customSpecs: cleanCustomSpecs(item.customSpecs),
                 });
+                if (addRes && Array.isArray(addRes.items) && addRes.items.length > 0) {
+                  anyAdded = true;
+                }
               } catch {
-                // If single item fails (e.g. invalid test mock id), continue with rest
+                // If single item fails (e.g. invalid product ID), continue with rest
               }
             }
 
-            // Re-fetch merged unified cart from server
-            const mergedRes = await apiGetCart();
-            if (mergedRes && Array.isArray(mergedRes.items)) {
-              set({
-                items: mergedRes.items.map(mapServerItemToCartItem),
-                isSyncing: false,
-              });
-              return;
+            // Only update local items if server push actually succeeded with items
+            if (anyAdded) {
+              const mergedRes = await apiGetCart();
+              if (mergedRes && Array.isArray(mergedRes.items) && mergedRes.items.length > 0) {
+                set({
+                  items: mergedRes.items.map(mapServerItemToCartItem),
+                  isSyncing: false,
+                });
+                return;
+              }
             }
           }
 
-          // If no unsynced local items, align with the server cart
+          // If server cart has items, align with the server cart
           if (serverItems.length > 0) {
             set({
               items: serverItems.map(mapServerItemToCartItem),
               isSyncing: false,
             });
-          } else if (localItems.length === 0) {
-            set({ items: [], isSyncing: false });
           } else {
+            // Server cart is empty and nothing was synced; preserve local items!
             set({ isSyncing: false });
           }
         } catch {
@@ -262,12 +267,12 @@ export const useCartStore = create<CartStoreState>()(
             customSpecs: cleanedSpecs,
           })
             .then((res) => {
-              if (res && Array.isArray(res.items)) {
+              if (res && Array.isArray(res.items) && res.items.length > 0) {
                 set({ items: res.items.map(mapServerItemToCartItem) });
               }
             })
             .catch(() => {
-              // Ignored if user not logged in; local state is preserved
+              // Ignored if user not logged in or backend error; local state is preserved
             });
         }
       },

@@ -3,7 +3,7 @@ import { useCartStore, calculateLineTotal, generateCartItemId } from './cart';
 import type { Product } from '~/types/api';
 
 const mockProduct: Product = {
-  id: 'b0000000-0000-4000-8000-000000000001',
+  id: 'c5e5efeb-65b2-4a2b-81c2-0fa5f6c42a3c',
   name: '0.55mm Steeltile Aluminium Sheet',
   slug: 'steeltile-sheet',
   description: 'Test sheet',
