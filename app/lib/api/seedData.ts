@@ -9,7 +9,7 @@ import type {
 
 export const SEED_CATEGORIES: Category[] = [
   {
-    id: 'cat-industrial',
+    id: 'a0000000-0000-4000-8000-000000000001',
     name: 'Industrial & Longspan Sheets',
     slug: 'industrial-sheets',
     description:
@@ -28,7 +28,7 @@ export const SEED_CATEGORIES: Category[] = [
     ],
   },
   {
-    id: 'cat-residential',
+    id: 'a0000000-0000-4000-8000-000000000002',
     name: 'Residential Step-Tile & Metcoppo',
     slug: 'residential-steeltile',
     description:
@@ -47,7 +47,7 @@ export const SEED_CATEGORIES: Category[] = [
     ],
   },
   {
-    id: 'cat-stone-coated',
+    id: 'a0000000-0000-4000-8000-000000000003',
     name: 'Stone-Coated Shingle & Bond',
     slug: 'stone-coated',
     description:
@@ -66,7 +66,7 @@ export const SEED_CATEGORIES: Category[] = [
     ],
   },
   {
-    id: 'cat-flashings',
+    id: 'a0000000-0000-4000-8000-000000000004',
     name: 'Flashings, Gutters & Trims',
     slug: 'flashings-gutters',
     description:
@@ -85,7 +85,7 @@ export const SEED_CATEGORIES: Category[] = [
     ],
   },
   {
-    id: 'cat-fasteners',
+    id: 'a0000000-0000-4000-8000-000000000005',
     name: 'Fasteners & Installation Accessories',
     slug: 'fasteners-accessories',
     description:
@@ -107,7 +107,7 @@ export const SEED_CATEGORIES: Category[] = [
 
 export const SEED_PRODUCTS: Product[] = [
   {
-    id: 'prod-longspan-055',
+    id: 'b0000000-0000-4000-8000-000000000001',
     name: 'Aluminium Longspan Corrugated Sheet (0.55mm AZ150)',
     slug: 'aluminium-longspan-055mm',
     description:
@@ -143,7 +143,7 @@ export const SEED_PRODUCTS: Product[] = [
     ],
     variants: [
       {
-        id: 'var-longspan-045',
+        id: 'c0000000-0000-4000-8000-000000000011',
         name: 'Standard 0.45mm Gauge',
         sku: 'LS-ALU-045',
         priceOverride: 4900,
@@ -151,7 +151,7 @@ export const SEED_PRODUCTS: Product[] = [
         isActive: true,
       },
       {
-        id: 'var-longspan-055',
+        id: 'c0000000-0000-4000-8000-000000000012',
         name: 'Heavy Duty 0.55mm Gauge (Recommended)',
         sku: 'LS-ALU-055',
         priceOverride: 5800,
@@ -159,7 +159,7 @@ export const SEED_PRODUCTS: Product[] = [
         isActive: true,
       },
       {
-        id: 'var-longspan-070',
+        id: 'c0000000-0000-4000-8000-000000000013',
         name: 'Industrial Extra Heavy 0.70mm Gauge',
         sku: 'LS-ALU-070',
         priceOverride: 7400,
@@ -169,7 +169,7 @@ export const SEED_PRODUCTS: Product[] = [
     ],
   },
   {
-    id: 'prod-metcoppo-055',
+    id: 'b0000000-0000-4000-8000-000000000002',
     name: 'Italian Metcoppo Steeltile Profile (0.55mm)',
     slug: 'italian-metcoppo-steeltile-055mm',
     description:
@@ -195,7 +195,7 @@ export const SEED_PRODUCTS: Product[] = [
     ],
     variants: [
       {
-        id: 'var-metcoppo-050',
+        id: 'c0000000-0000-4000-8000-000000000021',
         name: '0.50mm Matte Coated',
         sku: 'MET-050-MATTE',
         priceOverride: 6100,
@@ -203,7 +203,7 @@ export const SEED_PRODUCTS: Product[] = [
         isActive: true,
       },
       {
-        id: 'var-metcoppo-055',
+        id: 'c0000000-0000-4000-8000-000000000022',
         name: '0.55mm Wrinkle Texture (Premium)',
         sku: 'MET-055-WRINKLE',
         priceOverride: 6500,
@@ -213,7 +213,7 @@ export const SEED_PRODUCTS: Product[] = [
     ],
   },
   {
-    id: 'prod-steptile-055',
+    id: 'b0000000-0000-4000-8000-000000000003',
     name: 'Modern Step-Tile Architectural Profile (0.55mm)',
     slug: 'modern-steptile-architectural-profile',
     description:
@@ -239,7 +239,7 @@ export const SEED_PRODUCTS: Product[] = [
     ],
     variants: [
       {
-        id: 'var-steptile-050',
+        id: 'c0000000-0000-4000-8000-000000000031',
         name: '0.50mm Premium Texture',
         sku: 'ST-050-TEX',
         priceOverride: 5700,
@@ -247,7 +247,7 @@ export const SEED_PRODUCTS: Product[] = [
         isActive: true,
       },
       {
-        id: 'var-steptile-055',
+        id: 'c0000000-0000-4000-8000-000000000032',
         name: '0.55mm Heavy Gauge',
         sku: 'ST-055-TEX',
         priceOverride: 6200,
@@ -257,7 +257,7 @@ export const SEED_PRODUCTS: Product[] = [
     ],
   },
   {
-    id: 'prod-stone-shingle',
+    id: 'b0000000-0000-4000-8000-000000000004',
     name: 'Stone-Coated Shingle Roofing Tile (0.45mm Zincalume)',
     slug: 'stone-coated-shingle-tile',
     description:
@@ -283,7 +283,7 @@ export const SEED_PRODUCTS: Product[] = [
     ],
     variants: [
       {
-        id: 'var-shingle-black',
+        id: 'c0000000-0000-4000-8000-000000000041',
         name: 'Charcoal Black Finish',
         sku: 'STN-SHING-BLK',
         priceOverride: 4200,
@@ -291,7 +291,7 @@ export const SEED_PRODUCTS: Product[] = [
         isActive: true,
       },
       {
-        id: 'var-shingle-brown',
+        id: 'c0000000-0000-4000-8000-000000000042',
         name: 'Coffee Brown Finish',
         sku: 'STN-SHING-BRN',
         priceOverride: 4200,
@@ -301,7 +301,7 @@ export const SEED_PRODUCTS: Product[] = [
     ],
   },
   {
-    id: 'prod-ridge-cap',
+    id: 'b0000000-0000-4000-8000-000000000005',
     name: 'Roll-Formed Circular Ridge Cap (1.2m Section)',
     slug: 'circular-ridge-cap-1-2m',
     description:
@@ -327,7 +327,7 @@ export const SEED_PRODUCTS: Product[] = [
     ],
     variants: [
       {
-        id: 'var-ridge-std',
+        id: 'c0000000-0000-4000-8000-000000000051',
         name: '1.2m Section (0.55mm)',
         sku: 'RDG-12-055',
         priceOverride: 2800,
@@ -337,7 +337,7 @@ export const SEED_PRODUCTS: Product[] = [
     ],
   },
   {
-    id: 'prod-box-gutter',
+    id: 'b0000000-0000-4000-8000-000000000006',
     name: 'Heavy-Duty Industrial Box Gutter (3.0m Section)',
     slug: 'industrial-box-gutter-3m',
     description:
@@ -363,7 +363,7 @@ export const SEED_PRODUCTS: Product[] = [
     ],
     variants: [
       {
-        id: 'var-gutter-070',
+        id: 'c0000000-0000-4000-8000-000000000061',
         name: '0.70mm Mill Aluminium (3.0m)',
         sku: 'GUT-BOX-070',
         priceOverride: 8500,
@@ -373,7 +373,7 @@ export const SEED_PRODUCTS: Product[] = [
     ],
   },
   {
-    id: 'prod-fastener-screws',
+    id: 'b0000000-0000-4000-8000-000000000007',
     name: 'Class 4 Self-Drilling Hex Head Roofing Screws (100-Pack)',
     slug: 'self-drilling-roofing-screws-100pk',
     description:
@@ -399,7 +399,7 @@ export const SEED_PRODUCTS: Product[] = [
     ],
     variants: [
       {
-        id: 'var-screw-50mm',
+        id: 'c0000000-0000-4000-8000-000000000071',
         name: '50mm Screws (Pack of 100)',
         sku: 'SCR-50MM-100',
         priceOverride: 4500,
@@ -407,7 +407,7 @@ export const SEED_PRODUCTS: Product[] = [
         isActive: true,
       },
       {
-        id: 'var-screw-75mm',
+        id: 'c0000000-0000-4000-8000-000000000072',
         name: '75mm Screws for Timber Purling (Pack of 100)',
         sku: 'SCR-75MM-100',
         priceOverride: 5800,

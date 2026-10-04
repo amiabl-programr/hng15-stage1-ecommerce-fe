@@ -3,7 +3,7 @@ import { useCartStore, calculateLineTotal, generateCartItemId } from './cart';
 import type { Product } from '~/types/api';
 
 const mockProduct: Product = {
-  id: 'prod-1',
+  id: 'b0000000-0000-4000-8000-000000000001',
   name: '0.55mm Steeltile Aluminium Sheet',
   slug: 'steeltile-sheet',
   description: 'Test sheet',
@@ -86,5 +86,16 @@ describe('Cart Store', () => {
     const id1 = generateCartItemId('prod-1', 'var-1', { colour: 'Wine Red' });
     const id2 = generateCartItemId('prod-1', 'var-1', { colour: ' Wine Red ', notes: '' });
     expect(id1).toBe(id2);
+  });
+
+  it('validates UUIDs properly', async () => {
+    const { isValidUuid } = await import('./cart');
+    expect(isValidUuid('b0000000-0000-4000-8000-000000000001')).toBe(true);
+    expect(isValidUuid('3fa85f64-5717-4562-b3fc-2c963f66afa6')).toBe(true);
+    expect(isValidUuid('prod-longspan-055')).toBe(false);
+    expect(isValidUuid('prod-1')).toBe(false);
+    expect(isValidUuid(null)).toBe(false);
+    expect(isValidUuid(undefined)).toBe(false);
+    expect(isValidUuid('')).toBe(false);
   });
 });

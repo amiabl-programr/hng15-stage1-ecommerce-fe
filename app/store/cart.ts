@@ -51,6 +51,12 @@ export function cleanCustomSpecs(specs?: CustomSpecs | null): CustomSpecs | unde
   return cleaned;
 }
 
+export const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isValidUuid(id?: string | null): boolean {
+  return typeof id === 'string' && UUID_REGEX.test(id.trim());
+}
+
 export function generateCartItemId(
   productId: string,
   variantId?: string,
@@ -138,7 +144,9 @@ export const useCartStore = create<CartStoreState>()(
 
           // Detect local items that have not yet been stored on the server
           // (for instance, items added while user was an anonymous guest)
+          // Exclude any legacy mock items with non-UUID product IDs
           const unsyncedItems = localItems.filter((local) => {
+            if (!isValidUuid(local.productId)) return false;
             if (!local.serverId) return true;
             return !serverItems.some((s) => s.id === local.serverId);
           });
@@ -245,21 +253,23 @@ export const useCartStore = create<CartStoreState>()(
           return { items: [...state.items, newItem] };
         });
 
-        // Sync with backend in background
-        apiAddToCart({
-          productId: product.id,
-          variantId: variant?.id || undefined,
-          quantity,
-          customSpecs: cleanedSpecs,
-        })
-          .then((res) => {
-            if (res && Array.isArray(res.items)) {
-              set({ items: res.items.map(mapServerItemToCartItem) });
-            }
+        // Sync with backend in background if product has a valid UUID
+        if (isValidUuid(product.id)) {
+          apiAddToCart({
+            productId: product.id,
+            variantId: variant?.id && isValidUuid(variant.id) ? variant.id : undefined,
+            quantity,
+            customSpecs: cleanedSpecs,
           })
-          .catch(() => {
-            // Ignored if user not logged in; local state is preserved
-          });
+            .then((res) => {
+              if (res && Array.isArray(res.items)) {
+                set({ items: res.items.map(mapServerItemToCartItem) });
+              }
+            })
+            .catch(() => {
+              // Ignored if user not logged in; local state is preserved
+            });
+        }
       },
 
       updateQuantity: (id: string, quantity: number) => {
@@ -350,6 +360,13 @@ export const useCartStore = create<CartStoreState>()(
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated(true);
+        // Automatically prune legacy mock items that don't have valid UUIDs from previous dev/offline sessions
+        if (state && Array.isArray(state.items)) {
+          const valid = state.items.filter((item) => isValidUuid(item.productId));
+          if (valid.length !== state.items.length) {
+            state.items = valid;
+          }
+        }
         // Automatically sync with server once hydrated
         state?.syncFromServer();
       },

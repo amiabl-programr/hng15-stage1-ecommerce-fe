@@ -15,7 +15,7 @@ import {
   Truck,
   Wallet,
 } from "lucide-react";
-import { cleanCustomSpecs, useCart } from "~/store/cart";
+import { cleanCustomSpecs, isValidUuid, useCart } from "~/store/cart";
 import { useAuth } from "~/store/session";
 import { createOrder } from "~/lib/api/endpoints";
 import { formatMoney } from "~/lib/format";
@@ -179,6 +179,15 @@ export default function CheckoutPage() {
     if (!isAuthenticated || !user) {
       setGeneralError("Authentication required: Please sign in to submit your order.");
       navigate("/login?redirect=/checkout");
+      return;
+    }
+
+    const invalidUuidItems = items.filter((item) => !isValidUuid(item.productId));
+    if (invalidUuidItems.length > 0) {
+      setGeneralError(
+        "Some items in your cart were added from an outdated catalogue session. Please clear your cart and select items from our live products catalogue."
+      );
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
