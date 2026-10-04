@@ -53,4 +53,38 @@ describe('Cart Store', () => {
     useCartStore.getState().removeItem(items[0].id);
     expect(useCartStore.getState().items).toHaveLength(0);
   });
+
+  it('cleanCustomSpecs strips empty strings and invalid values', async () => {
+    const { cleanCustomSpecs } = await import('./cart');
+
+    expect(cleanCustomSpecs(undefined)).toBeUndefined();
+    expect(cleanCustomSpecs({})).toBeUndefined();
+    expect(
+      cleanCustomSpecs({
+        colour: '   ',
+        finish: '',
+        notes: '',
+        lengthMetres: 0,
+      })
+    ).toBeUndefined();
+
+    expect(
+      cleanCustomSpecs({
+        colour: ' Wine Red ',
+        finish: '',
+        notes: ' Fragile offload ',
+        lengthMetres: 6.5,
+      })
+    ).toEqual({
+      colour: 'Wine Red',
+      notes: 'Fragile offload',
+      lengthMetres: 6.5,
+    });
+  });
+
+  it('generates consistent cart item IDs regardless of whitespace or empty specs', async () => {
+    const id1 = generateCartItemId('prod-1', 'var-1', { colour: 'Wine Red' });
+    const id2 = generateCartItemId('prod-1', 'var-1', { colour: ' Wine Red ', notes: '' });
+    expect(id1).toBe(id2);
+  });
 });

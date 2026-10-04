@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import type { Profile } from '~/types/api';
 import { getMe, logout as apiLogout } from '~/lib/api/endpoints';
 
+import { useCartStore } from './cart';
+
 interface SessionState {
   user: Profile | null;
   isLoading: boolean;
@@ -24,6 +26,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     try {
       const res = await getMe();
       set({ user: res.user, isLoading: false, isInitialized: true });
+      if (res.user) {
+        useCartStore.getState().syncFromServer();
+      }
       return res.user;
     } catch (err) {
       set({
@@ -36,7 +41,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     }
   },
 
-  setUser: (user) => set({ user, isInitialized: true }),
+  setUser: (user) => {
+    set({ user, isInitialized: true });
+    if (user) {
+      useCartStore.getState().syncFromServer();
+    }
+  },
 
   logout: async () => {
     set({ isLoading: true });

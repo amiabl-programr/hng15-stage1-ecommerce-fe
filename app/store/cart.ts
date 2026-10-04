@@ -10,8 +10,8 @@ import {
 } from '~/lib/api/endpoints';
 
 export interface CartItem {
-  id: string; // composite key or server id
-  serverId?: string;
+  id: string; // composite key
+  serverId?: string; // backend database UUID in cart_items table
   productId: string;
   productName: string;
   slug: string;
@@ -26,13 +26,39 @@ export interface CartItem {
   lineTotal: number;
 }
 
+/**
+ * Strips empty strings, NaN, or invalid fields so customSpecs strictly complies
+ * with the backend CustomSpecsSchema (z.strictObject).
+ */
+export function cleanCustomSpecs(specs?: CustomSpecs | null): CustomSpecs | undefined {
+  if (!specs) return undefined;
+  const cleaned: CustomSpecs = {};
+  if (typeof specs.lengthMetres === 'number' && specs.lengthMetres > 0) {
+    cleaned.lengthMetres = Number(specs.lengthMetres);
+  }
+  if (specs.colour && specs.colour.trim().length > 0) {
+    cleaned.colour = specs.colour.trim();
+  }
+  if (specs.finish && specs.finish.trim().length > 0) {
+    cleaned.finish = specs.finish.trim();
+  }
+  if (specs.notes && specs.notes.trim().length > 0) {
+    cleaned.notes = specs.notes.trim();
+  }
+  if (Object.keys(cleaned).length === 0) {
+    return undefined;
+  }
+  return cleaned;
+}
+
 export function generateCartItemId(
   productId: string,
   variantId?: string,
   customSpecs?: CustomSpecs
 ): string {
-  const specsKey = customSpecs
-    ? `${customSpecs.lengthMetres || ''}-${customSpecs.colour || ''}-${customSpecs.finish || ''}-${customSpecs.notes || ''}`
+  const specs = cleanCustomSpecs(customSpecs);
+  const specsKey = specs
+    ? `${specs.lengthMetres || ''}-${specs.colour || ''}-${specs.finish || ''}-${specs.notes || ''}`
     : '';
   return `${productId}:${variantId || ''}:${specsKey}`;
 }
@@ -50,18 +76,22 @@ export function calculateLineTotal(
 }
 
 function mapServerItemToCartItem(si: ServerCartItem): CartItem {
+  const specs = cleanCustomSpecs(si.customSpecs);
+  const compositeId = generateCartItemId(si.productId, si.variantId ?? undefined, specs);
+  const isDimensioned = Boolean(specs?.lengthMetres && specs.lengthMetres > 0);
+
   return {
-    id: si.id,
+    id: compositeId,
     serverId: si.id,
     productId: si.productId,
     productName: si.productName,
     slug: si.productSlug,
     variantId: si.variantId ?? undefined,
     unitPrice: si.unitPrice,
-    productType: 'standard',
-    unitType: 'piece',
+    productType: isDimensioned ? 'dimensioned' : 'standard',
+    unitType: isDimensioned ? 'metre' : 'piece',
     quantity: si.quantity,
-    customSpecs: si.customSpecs ?? undefined,
+    customSpecs: specs,
     imageUrl: si.mediaUrl ?? undefined,
     lineTotal: si.lineTotal,
   };
@@ -70,6 +100,7 @@ function mapServerItemToCartItem(si: ServerCartItem): CartItem {
 interface CartStoreState {
   items: CartItem[];
   isHydrated: boolean;
+  isSyncing: boolean;
 
   setHydrated: (state: boolean) => void;
   syncFromServer: () => Promise<void>;
@@ -89,18 +120,69 @@ export const useCartStore = create<CartStoreState>()(
     (set, get) => ({
       items: [],
       isHydrated: false,
+      isSyncing: false,
 
       setHydrated: (state: boolean) => set({ isHydrated: state }),
 
       syncFromServer: async () => {
         try {
+          set({ isSyncing: true });
           const res = await apiGetCart();
-          if (res && Array.isArray(res.items)) {
-            const mapped = res.items.map(mapServerItemToCartItem);
-            set({ items: mapped });
+          if (!res || !Array.isArray(res.items)) {
+            set({ isSyncing: false });
+            return;
+          }
+
+          const localItems = get().items;
+          const serverItems = res.items;
+
+          // Detect local items that have not yet been stored on the server
+          // (for instance, items added while user was an anonymous guest)
+          const unsyncedItems = localItems.filter((local) => {
+            if (!local.serverId) return true;
+            return !serverItems.some((s) => s.id === local.serverId);
+          });
+
+          if (unsyncedItems.length > 0) {
+            // Push guest/offline items to user's server cart
+            for (const item of unsyncedItems) {
+              try {
+                await apiAddToCart({
+                  productId: item.productId,
+                  variantId: item.variantId || undefined,
+                  quantity: item.quantity,
+                  customSpecs: cleanCustomSpecs(item.customSpecs),
+                });
+              } catch {
+                // If single item fails (e.g. invalid test mock id), continue with rest
+              }
+            }
+
+            // Re-fetch merged unified cart from server
+            const mergedRes = await apiGetCart();
+            if (mergedRes && Array.isArray(mergedRes.items)) {
+              set({
+                items: mergedRes.items.map(mapServerItemToCartItem),
+                isSyncing: false,
+              });
+              return;
+            }
+          }
+
+          // If no unsynced local items, align with the server cart
+          if (serverItems.length > 0) {
+            set({
+              items: serverItems.map(mapServerItemToCartItem),
+              isSyncing: false,
+            });
+          } else if (localItems.length === 0) {
+            set({ items: [], isSyncing: false });
+          } else {
+            set({ isSyncing: false });
           }
         } catch {
           // Guest or network failure; continue with local cart
+          set({ isSyncing: false });
         }
       },
 
@@ -108,11 +190,14 @@ export const useCartStore = create<CartStoreState>()(
         if (quantity <= 0) return;
 
         const effectivePrice = variant?.priceOverride != null ? variant.priceOverride : product.basePrice;
-        const itemId = generateCartItemId(product.id, variant?.id, customSpecs);
+        const cleanedSpecs = cleanCustomSpecs(customSpecs);
+        const itemId = generateCartItemId(product.id, variant?.id, cleanedSpecs);
         const primaryMedia = product.media.find((m) => m.isPrimary) || product.media[0];
 
         set((state) => {
-          const existingIndex = state.items.findIndex((item) => item.id === itemId || item.serverId === itemId);
+          const existingIndex = state.items.findIndex(
+            (item) => item.id === itemId || item.serverId === itemId
+          );
 
           if (existingIndex > -1) {
             const updatedItems = [...state.items];
@@ -138,7 +223,7 @@ export const useCartStore = create<CartStoreState>()(
             effectivePrice,
             product.productType,
             quantity,
-            customSpecs
+            cleanedSpecs
           );
 
           const newItem: CartItem = {
@@ -152,7 +237,7 @@ export const useCartStore = create<CartStoreState>()(
             productType: product.productType,
             unitType: product.unitType,
             quantity,
-            customSpecs,
+            customSpecs: cleanedSpecs,
             imageUrl: primaryMedia?.url,
             lineTotal: newLineTotal,
           };
@@ -163,9 +248,9 @@ export const useCartStore = create<CartStoreState>()(
         // Sync with backend in background
         apiAddToCart({
           productId: product.id,
-          variantId: variant?.id,
+          variantId: variant?.id || undefined,
           quantity,
-          customSpecs,
+          customSpecs: cleanedSpecs,
         })
           .then((res) => {
             if (res && Array.isArray(res.items)) {
@@ -173,12 +258,13 @@ export const useCartStore = create<CartStoreState>()(
             }
           })
           .catch(() => {
-            // Ignored if user not logged in
+            // Ignored if user not logged in; local state is preserved
           });
       },
 
       updateQuantity: (id: string, quantity: number) => {
         const currentItem = get().items.find((item) => item.id === id || item.serverId === id);
+        const serverId = currentItem?.serverId;
 
         set((state) => {
           if (quantity <= 0) {
@@ -204,28 +290,37 @@ export const useCartStore = create<CartStoreState>()(
           };
         });
 
-        const targetId = currentItem?.serverId || id;
-        if (targetId) {
-          apiUpdateCartItem(targetId, { quantity })
-            .then((res) => {
-              if (res && Array.isArray(res.items)) {
-                set({ items: res.items.map(mapServerItemToCartItem) });
-              }
-            })
-            .catch(() => {});
+        if (serverId) {
+          if (quantity <= 0) {
+            apiRemoveCartItem(serverId)
+              .then((res) => {
+                if (res && Array.isArray(res.items)) {
+                  set({ items: res.items.map(mapServerItemToCartItem) });
+                }
+              })
+              .catch(() => {});
+          } else {
+            apiUpdateCartItem(serverId, { quantity })
+              .then((res) => {
+                if (res && Array.isArray(res.items)) {
+                  set({ items: res.items.map(mapServerItemToCartItem) });
+                }
+              })
+              .catch(() => {});
+          }
         }
       },
 
       removeItem: (id: string) => {
         const currentItem = get().items.find((item) => item.id === id || item.serverId === id);
-        const targetId = currentItem?.serverId || id;
+        const serverId = currentItem?.serverId;
 
         set((state) => ({
           items: state.items.filter((item) => item.id !== id && item.serverId !== id),
         }));
 
-        if (targetId) {
-          apiRemoveCartItem(targetId)
+        if (serverId) {
+          apiRemoveCartItem(serverId)
             .then((res) => {
               if (res && Array.isArray(res.items)) {
                 set({ items: res.items.map(mapServerItemToCartItem) });
@@ -273,6 +368,7 @@ export function useCart() {
     itemCount: isHydrated ? itemCount : 0,
     subtotal: isHydrated ? subtotal : 0,
     isHydrated,
+    isSyncing: store.isSyncing,
     syncFromServer: store.syncFromServer,
     addItem: store.addItem,
     updateQuantity: store.updateQuantity,

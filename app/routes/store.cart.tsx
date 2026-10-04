@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router";
 import { ArrowRight, Minus, Plus, ShoppingBag, Trash2, ArrowLeft, Lock } from "lucide-react";
 import { useCart } from "~/store/cart";
@@ -13,9 +14,23 @@ export function meta() {
 }
 
 export default function CartPage() {
-  const { items, itemCount, subtotal, isHydrated, updateQuantity, removeItem, clearCart } =
-    useCart();
+  const {
+    items,
+    itemCount,
+    subtotal,
+    isHydrated,
+    updateQuantity,
+    removeItem,
+    clearCart,
+    syncFromServer,
+  } = useCart();
   const { isAuthenticated, isInitialized } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      syncFromServer().catch(() => {});
+    }
+  }, [isAuthenticated, syncFromServer]);
 
   if (!isHydrated) {
     return (
