@@ -10,17 +10,13 @@ import {
   FileText,
   Clock,
   Mail,
-  Send,
-  Eye,
-  Check,
 } from "lucide-react";
 import { getOrderById } from "~/lib/api/endpoints";
 import { formatMoney, formatDateTime } from "~/lib/format";
 import { site } from "~/lib/site";
-import { Button, buttonClasses } from "~/components/ui/Button";
+import { buttonClasses } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
 import { Badge } from "~/components/ui/Badge";
-import { Modal } from "~/components/ui/Modal";
 import { getCachedData } from "~/lib/api/cache";
 import type { Order } from "~/types/api";
 
@@ -61,8 +57,6 @@ export default function CheckoutSuccessPage() {
   });
 
   const [isLoading, setIsLoading] = useState(!order && !!orderId);
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [emailResent, setEmailResent] = useState(false);
 
   useEffect(() => {
     if (!order && orderId) {
@@ -86,11 +80,6 @@ export default function CheckoutSuccessPage() {
         .finally(() => setIsLoading(false));
     }
   }, [order, orderId]);
-
-  const handleResendEmail = () => {
-    setEmailResent(true);
-    setTimeout(() => setEmailResent(false), 3000);
-  };
 
   const recipientEmail = order?.customerEmail || "your email address";
 
@@ -121,35 +110,6 @@ export default function CheckoutSuccessPage() {
               A verified order invoice and receipt has been sent to{" "}
               <strong className="text-emerald-700 dark:text-emerald-300 break-all">{recipientEmail}</strong>.
             </p>
-            <div className="mt-2.5 flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setShowEmailModal(true)}
-                className="btn-press text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1"
-              >
-                <Eye className="size-3.5" />
-                View Confirmation Email
-              </button>
-              <span className="text-muted/40">•</span>
-              <button
-                type="button"
-                onClick={handleResendEmail}
-                disabled={emailResent}
-                className="btn-press text-xs font-bold text-muted hover:text-fg flex items-center gap-1"
-              >
-                {emailResent ? (
-                  <>
-                    <Check className="size-3.5 text-emerald-600" />
-                    Sent!
-                  </>
-                ) : (
-                  <>
-                    <Send className="size-3.5" />
-                    Resend Email
-                  </>
-                )}
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -290,102 +250,6 @@ export default function CheckoutSuccessPage() {
           <ArrowRight className="size-4" />
         </Link>
       </div>
-
-      {/* Confirmation Email Preview Modal */}
-      {showEmailModal && order && (
-        <Modal
-          open={showEmailModal}
-          onClose={() => setShowEmailModal(false)}
-          title={`Email Preview: Order Confirmation #${order.orderNumber}`}
-        >
-          <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1 text-xs">
-            <div className="p-3 rounded-xl bg-raised border border-line space-y-1">
-              <p><span className="font-bold text-muted">From:</span> {site.name} &lt;orders@roofingco.com&gt;</p>
-              <p><span className="font-bold text-muted">To:</span> {order.customerEmail}</p>
-              <p><span className="font-bold text-muted">Subject:</span> Order Confirmation #{order.orderNumber} - {site.name}</p>
-              <p><span className="font-bold text-muted">Date:</span> {formatDateTime(order.createdAt)}</p>
-            </div>
-
-            <div className="border border-line rounded-xl p-5 bg-white text-slate-900 font-sans space-y-4 shadow-sm">
-              <div className="border-b pb-3">
-                <h2 className="text-lg font-black text-blue-900">{site.name}</h2>
-                <p className="text-xs text-slate-500">Official Order Invoice &amp; Production Waybill</p>
-              </div>
-
-              <div>
-                <p className="text-sm font-bold">Dear {order.customerName},</p>
-                <p className="text-xs text-slate-600 mt-1">
-                  We have received your order <strong>#{order.orderNumber}</strong>. Production has been scheduled at our mill.
-                </p>
-              </div>
-
-              <table className="w-full text-left border-collapse my-3">
-                <thead>
-                  <tr className="border-b bg-slate-50 text-[11px] font-bold text-slate-600">
-                    <th className="py-2 px-2">Item</th>
-                    <th className="py-2 px-2 text-center">Qty</th>
-                    <th className="py-2 px-2 text-right">Price</th>
-                    <th className="py-2 px-2 text-right">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
-                  {order.items.map((item) => (
-                    <tr key={item.id}>
-                      <td className="py-2.5 px-2">
-                        <div className="font-bold">{item.productName}</div>
-                        {item.customSpecs?.lengthMetres && (
-                          <div className="text-[11px] text-slate-500">Length: {item.customSpecs.lengthMetres}m</div>
-                        )}
-                        {item.customSpecs?.colour && (
-                          <div className="text-[11px] text-slate-500">Colour: {item.customSpecs.colour}</div>
-                        )}
-                      </td>
-                      <td className="py-2.5 px-2 text-center">{item.quantity}</td>
-                      <td className="py-2.5 px-2 text-right">{formatMoney(item.unitPrice)}</td>
-                      <td className="py-2.5 px-2 text-right font-bold">{formatMoney(item.lineTotal)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t font-bold text-xs">
-                    <td colSpan={3} className="py-2 px-2 text-right">Subtotal:</td>
-                    <td className="py-2 px-2 text-right">{formatMoney(order.subtotal)}</td>
-                  </tr>
-                  <tr className="font-bold text-sm bg-blue-50 text-blue-900">
-                    <td colSpan={3} className="py-2.5 px-2 text-right">Total:</td>
-                    <td className="py-2.5 px-2 text-right">{formatMoney(order.total)}</td>
-                  </tr>
-                </tfoot>
-              </table>
-
-              <div className="bg-slate-50 p-3 rounded-lg text-xs space-y-1">
-                <p className="font-bold text-slate-700">Delivery Address:</p>
-                <p className="text-slate-600">{order.deliveryAddress.streetAddress}, {order.deliveryAddress.city}, {order.deliveryAddress.state}</p>
-                <p className="text-slate-600">Phone: {order.customerPhone}</p>
-              </div>
-
-              <p className="text-[11px] text-slate-400 border-t pt-3">
-                Questions about your delivery? Reply directly to this email or call our team.
-              </p>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="secondary" onClick={() => setShowEmailModal(false)}>
-                Close Preview
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  handleResendEmail();
-                  setShowEmailModal(false);
-                }}
-              >
-                Send Again
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }
