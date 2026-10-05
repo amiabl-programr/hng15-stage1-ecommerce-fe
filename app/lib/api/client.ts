@@ -16,9 +16,31 @@ export class ApiError extends Error {
   }
 }
 
-const DEFAULT_API_BASE_URL = typeof window !== 'undefined'
-  ? (import.meta.env.VITE_API_URL || 'http://localhost:4000')
-  : (process.env.API_URL || 'http://localhost:4000');
+function resolveApiBaseUrl(): string {
+  const configured =
+    typeof window !== 'undefined'
+      ? import.meta.env.VITE_API_URL
+      : process.env.API_URL || import.meta.env.VITE_API_URL;
+
+  const base = (configured || 'http://localhost:4000').replace(/\/+$/, '');
+
+  // In production an unconfigured API URL means every request silently fails and
+  // the UI falls back to phantom seed data. Fail loudly at startup instead.
+  if (import.meta.env.PROD && !configured) {
+    throw new Error(
+      'VITE_API_URL is not set. The production build requires it to be provided ' +
+        'at build time (e.g. `docker build --build-arg VITE_API_URL=https://api.example.com`).'
+    );
+  }
+
+  return base;
+}
+
+const DEFAULT_API_BASE_URL = resolveApiBaseUrl();
+
+export function getApiBaseUrl(): string {
+  return DEFAULT_API_BASE_URL;
+}
 
 function handleOfflineMutationFallback<T>(endpoint: string, options: RequestInit): T | null {
   const method = (options.method || 'GET').toUpperCase();
@@ -176,7 +198,7 @@ export async function request<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const isGet = !options.method || options.method.toUpperCase() === 'GET';
-  const baseUrl = DEFAULT_API_BASE_URL.replace(/\/+$/, '');
+  const baseUrl = DEFAULT_API_BASE_URL;
   const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = `${baseUrl}${path}`;
 

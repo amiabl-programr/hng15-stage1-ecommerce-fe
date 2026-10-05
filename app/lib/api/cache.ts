@@ -57,6 +57,12 @@ export function getCachedData<T>(endpoint: string): T | null {
       const raw = window.localStorage.getItem(key);
       if (raw) {
         const parsed = JSON.parse(raw) as CacheEntry<T>;
+        // Honour the TTL. Without this, entries pinned at build time are served
+        // forever, so catalogue IDs can outlive the rows that produced them.
+        if (parsed.timestamp && parsed.ttlMs && Date.now() - parsed.timestamp > parsed.ttlMs) {
+          window.localStorage.removeItem(key);
+          return null;
+        }
         // Cache entry is valid; also populate memoryCache
         memoryCache.set(key, parsed as CacheEntry<unknown>);
         return parsed.data;
@@ -136,6 +142,13 @@ export function clearApiCache(): void {
  * Ensures the storefront never shows a blank page or empty state if the backend server is unreachable.
  */
 export function getFallbackData<T>(endpoint: string): T | null {
+  // Seed IDs are frontend-only constants that do not exist in any database.
+  // Serving them outside development lets users add phantom products to the
+  // cart, which then fail at checkout with "product with id ... not found".
+  if (!import.meta.env.DEV) {
+    return null;
+  }
+
   const clean = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = new URL(clean, 'http://localhost');
   const pathname = url.pathname;
