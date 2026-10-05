@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, getApiBaseUrl } from './client';
 import type {
   AccountOverviewResponse,
   AddToCartRequest,
@@ -128,11 +128,7 @@ export async function logout(): Promise<{ success: true }> {
 }
 
 export function getGoogleAuthUrl(next = '/account'): string {
-  const baseUrl = typeof window !== 'undefined'
-    ? (import.meta.env.VITE_API_URL || 'http://localhost:4000')
-    : (process.env.API_URL || 'http://localhost:4000');
-  
-  return `${baseUrl.replace(/\/+$/, '')}/api/auth/google?next=${encodeURIComponent(next)}`;
+  return `${getApiBaseUrl()}/api/auth/google?next=${encodeURIComponent(next)}`;
 }
 
 export async function getAccountOverview(): Promise<AccountOverviewResponse> {
