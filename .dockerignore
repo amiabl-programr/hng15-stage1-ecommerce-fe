@@ -2,3 +2,8 @@
 build
 node_modules
 README.md
+
+# Never bake a local .env into the image; config comes from build args.
+.env
+.env.*
+!.env.example
