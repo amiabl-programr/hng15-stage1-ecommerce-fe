@@ -39,7 +39,7 @@ describe('API Client with Caching & Offline Fallback', () => {
     expect(data.items[0].name).toBe('Custom Category');
 
     // Verify it was cached
-    const rawCache = window.localStorage.getItem('rc_cache_v1:/api/categories');
+    const rawCache = window.localStorage.getItem('rc_cache_v2:/api/categories');
     expect(rawCache).toBeTruthy();
     expect(JSON.parse(rawCache!).data.items[0].name).toBe('Custom Category');
   });
