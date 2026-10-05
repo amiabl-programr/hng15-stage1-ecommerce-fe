@@ -62,6 +62,50 @@ export async function getProductBySlug(slug: string): Promise<ProductBySlugRespo
   return api.get<ProductBySlugResponse>(`/api/products/${slug}`);
 }
 
+/**
+ * Resolves which of the given product/variant IDs still exist in the live
+ * catalogue. Used before checkout to reject carts holding IDs that only ever
+ * existed as frontend seed data, which the backend cannot resolve.
+ *
+ * The catalogue endpoint caps `limit` at 100 and paginates, so this walks the
+ * cursor until every product has been seen.
+ */
+export async function resolveLiveCartItems(
+  items: ReadonlyArray<{ productId: string; variantId?: string }>
+): Promise<{ valid: boolean; unknownProductIds: string[]; unknownVariantIds: string[] }> {
+  const wantedProductIds = new Set(items.map((i) => i.productId));
+  const wantedVariantIds = new Set(
+    items.map((i) => i.variantId).filter((id): id is string => Boolean(id))
+  );
+
+  const foundProductIds = new Set<string>();
+  const foundVariantIds = new Set<string>();
+
+  let cursor: string | undefined;
+  do {
+    const res: ProductListResponse = await getProducts({ limit: 100, cursor });
+
+    for (const product of res.items ?? []) {
+      if (!wantedProductIds.has(product.id)) continue;
+      foundProductIds.add(product.id);
+      for (const variant of product.variants ?? []) {
+        if (wantedVariantIds.has(variant.id)) {
+          foundVariantIds.add(variant.id);
+        }
+      }
+    }
+
+    cursor = res.nextCursor ?? undefined;
+  } while (cursor);
+
+  return {
+    valid: foundProductIds.size === wantedProductIds.size &&
+      foundVariantIds.size === wantedVariantIds.size,
+    unknownProductIds: [...wantedProductIds].filter((id) => !foundProductIds.has(id)),
+    unknownVariantIds: [...wantedVariantIds].filter((id) => !foundVariantIds.has(id)),
+  };
+}
+
 // ── Fabrication ────────────────────────────────────────────────────────────────
 
 export async function submitFabricationRequest(

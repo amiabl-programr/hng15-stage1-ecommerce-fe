@@ -16,6 +16,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { cleanCustomSpecs, isValidUuid, useCart } from "~/store/cart";
+import { resolveLiveCartItems } from "~/lib/api/endpoints";
 import { useAuth } from "~/store/session";
 import { createOrder } from "~/lib/api/endpoints";
 import { formatMoney } from "~/lib/format";
@@ -35,7 +36,7 @@ export function meta() {
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { items, subtotal, isHydrated, clearCart } = useCart();
+  const { items, subtotal, isHydrated, clearCart, removeItem } = useCart();
   const totalPayable = subtotal + DELIVERY_FEE;
   const { user, isAuthenticated, isLoading, isInitialized, fetchSession } = useAuth();
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -191,7 +192,52 @@ export default function CheckoutPage() {
       return;
     }
 
+    // A well-formed UUID is not proof the row still exists. Carts persist in
+    // localStorage and the server cart, so they can outlive the catalogue rows
+    // they reference (seed-data IDs, deleted or deactivated products). Confirm
+    // against the live catalogue so the user gets an actionable message instead
+    // of a raw "product not found" from the order RPC.
     setIsSubmitting(true);
+    let availability;
+    try {
+      availability = await resolveLiveCartItems(
+        items.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId,
+        }))
+      );
+    } catch {
+      // Catalogue unreachable. Let the order attempt proceed; the backend remains
+      // the source of truth and will reject definitively if the items are bad.
+      availability = null;
+    }
+
+    if (availability && !availability.valid) {
+      const removedNames = items
+        .filter(
+          (item) =>
+            availability.unknownProductIds.includes(item.productId) ||
+            (item.variantId && availability.unknownVariantIds.includes(item.variantId))
+        )
+        .map((item) => item.productName);
+
+      for (const item of items) {
+        const isStale =
+          availability.unknownProductIds.includes(item.productId) ||
+          (item.variantId && availability.unknownVariantIds.includes(item.variantId));
+        if (isStale) {
+          removeItem(item.id);
+        }
+      }
+
+      setGeneralError(
+        `These items are no longer available and have been removed from your cart: ${removedNames.join(", ")}. ` +
+          "They came from an earlier or cached catalogue session. Please re-add them from the current products page."
+      );
+      setIsSubmitting(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
 
     try {
       const orderPayload = {
